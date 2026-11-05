@@ -383,6 +383,18 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:800;letter-spacing:-.01
 .sharebox{display:flex;flex-direction:column;gap:12px;align-items:center}
 .sharebox img{width:100%;max-width:300px;border-radius:18px;box-shadow:0 20px 40px -20px rgba(0,0,0,.6)}
 .pen{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--surface2);color:var(--muted);vertical-align:middle;margin-left:6px}
+.setgroup{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:20px;background:var(--surface)}
+.setgroup h3{font-size:17px}
+.setgroup p{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:14px;background:var(--surface2)}
+.seg button{text-align:center;padding:10px 6px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.tog{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left}
+.tog span{min-width:0}.tog b{display:block;font-size:15px}.tog small{font-size:13px;color:var(--muted)}
+.sw{flex:none;width:50px;height:30px;border-radius:999px;background:var(--line);position:relative;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
+.tog.on .sw{background:var(--mint)}.tog.on .sw::after{transform:translateX(20px)}
+.chill{font-size:10px;font-family:var(--mono);padding:2px 6px;border-radius:999px;background:var(--surface2);color:var(--sky);margin-left:4px;vertical-align:middle}
 </style>
 </head><body>
 <main>
@@ -499,14 +511,14 @@ function traitScore(t){let s=.6*momentum(TH(t))+.4*questPct(t.worlds);
 function visionMatch(){return Math.round(TRAITS.reduce((a,t)=>a+traitScore(t),0)/TRAITS.length)}
 function lastDone(id){for(let i=0;i<120;i++)if(done(id,daysAgo(i)))return i;return null}
 function behind(){const out=[];for(const h of HABITS){if(done(h.id,today()))continue;const ld=lastDone(h.id),lim=Math.ceil(7/h.freq);
-  const gap=ld===null?null:ld;if(gap===null||gap>lim)out.push({h,gap,ratio:gap===null?2:gap/lim})}
+  const gap=ld===null?null:ld;if(gap===null||gap>lim*(chill()?2:1))out.push({h,gap,ratio:gap===null?2:gap/lim})}
   return out.sort((a,b)=>b.ratio-a.ratio||b.h.freq-a.h.freq)}
 function paceToday(){const exp=HABITS.reduce((a,h)=>a+h.freq/7,0),d=(S.log[today()]||[]).length;return Math.min(100,Math.round(d/exp*100))}
 function titleFor(lv){return["Rookie","Starter","Grinder","Contender","Operator","Main Character","Architect","Unicorn"][Math.min(7,Math.floor((lv-1)/2))]}
 
 /* ======== fx ======== */
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),1700)}
-function burst(el,label){if(!el)return;const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+function burst(el,label){if(!el||!SET().fx)return;const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
   const f=document.createElement("div");f.className="float";f.textContent=label;f.style.left=(cx-24)+"px";f.style.top=(cy-30)+"px";document.body.appendChild(f);
   if(reduce){setTimeout(()=>f.remove(),700);return}
   f.animate([{transform:"translateY(0)",opacity:1},{transform:"translateY(-56px)",opacity:0}],{duration:950,easing:"ease-out"}).onfinish=()=>f.remove();
@@ -520,7 +532,7 @@ function levelCheck(before){const a=lvl(before).lv,b=lvl(txp()).lv;if(b>a){$("lv
 function header(){const L=lvl(txp()),st=streak();
   return `<div class="hdr"><div class="logo">life<i>max</i></div><div class="pills">
   <span class="pill num"><svg viewBox="0 0 24 24" fill="var(--amber)"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg>${st}</span>
-  <span class="pill num">OVR ${Math.floor(ovrOn(today()))}</span></div></div>`}
+  <span class="pill num">OVR ${Math.floor(ovrOn(today()))}</span><button class="pill" data-act="settings" aria-label="Settings" style="padding:6px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div></div>`}
 function storyRow(){return `<div class="stories">${TRAITS.map(t=>{const m=momentum(TH(t)),tr=trend(TH(t));
   return `<button class="story ${m<40?"slip":""}" data-act="trait" data-id="${t.id}"><span class="rg" style="--c:${t.c};--p:${m}"><span style="color:${t.c}">${m}</span></span><small>${t.name}${m<40?" ↓":tr==="up"?" ↑":""}</small></button>`}).join("")}</div>`}
 function postCard(e){const h=H(e.habit);if(!h)return"";const t=h.trait,c=t.c;let body="";
@@ -541,7 +553,7 @@ function vFeed(){
   const list=Object.values(E).sort((a,b)=>b.ts-a.ts).slice(0,60),bh=behind().slice(0,3);
   return `${header()}${ovrCard()}${friendStrip()}${storyRow()}
   ${careCard()}
-  ${graceDay(today())?`<div class="card"><span class="eyebrow">Go easy today</span><h3>One small thing counts. Nothing you skip today will cost you.</h3></div>`:bh.length?`<div><div class="sec-h" style="margin-bottom:10px"><h2>Falling behind</h2><span class="eyebrow">vs Future You</span></div><div class="alerts">${bh.map(({h,gap})=>`
+  ${graceDay(today())?`<div class="card"><span class="eyebrow">Go easy today</span><h3>One small thing counts. Nothing you skip today will cost you.</h3></div>`:!SET().alerts?"":bh.length&&chill()?`<div><div class="sec-h" style="margin-bottom:10px"><h2>When you're ready</h2><span class="eyebrow">no pressure</span></div><div class="alerts">${bh.map(({h})=>`<div class="alert mid" style="border-left-color:var(--sky)"><span class="ic">${ico(h.id,h.trait.c)}</span><span class="tx"><b>${h.name}</b><span>It's been a while. Even a small one counts.</span></span><button class="lockbtn" data-act="proof" data-id="${h.id}">Do it</button></div>`).join("")}</div></div>`:bh.length?`<div><div class="sec-h" style="margin-bottom:10px"><h2>Falling behind</h2><span class="eyebrow">vs Future You</span></div><div class="alerts">${bh.map(({h,gap})=>`
    <div class="alert ${gap!==null&&gap<5?"mid":""}"><span class="ic">${ico(h.id,h.trait.c)}</span><span class="tx"><b>${gap===null?h.name+": not started":h.name+": "+gap+" days"}</b><span>Future you does this ${h.freq}× a week</span></span><button class="lockbtn" data-act="proof" data-id="${h.id}">Lock in</button></div>`).join("")}</div></div>`
    :`<div class="card"><span class="eyebrow">On pace</span><h3>Nothing slipping. You're moving like Future You.</h3></div>`}
   <div style="display:flex;flex-direction:column;gap:14px"><div class="sec-h"><h2>Your feed</h2><span class="eyebrow">${Object.keys(E).length} proofs</span></div>
@@ -598,8 +610,8 @@ function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.
    <div class="weekcmp"><div><span>This week</span><span class="b"><i style="width:${w0/mx*100}%;background:var(--hot)"></i></span><span class="num">${w0} XP</span></div>
    <div><span class="muted">Last week</span><span class="b"><i style="width:${w1/mx*100}%;background:var(--muted)"></i></span><span class="num muted">${w1} XP</span></div></div></div>
   <div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Vault</h2><span class="eyebrow">fill order: left to right</span></div>
-   <button class="total" data-act="accts"><span class="muted" style="font-size:13px">Across your accounts · edit</span><b class="num">${money(tot)}</b></button>
-   <div class="jars">${GOALS.map(g0=>{const g=GL(g0),G=S.goals[g.k],v=+G[g.f]||0,p=Math.min(100,Math.round(v/(+G.target||1)*100));return `<button class="jar" data-act="jar" data-id="${g.k}"><span class="gl"><span class="fl" style="--c:${g.c};height:${p}%"></span><span class="pc num">${p}%</span></span><small>${g.name}<br>${money(v)}</small></button>`}).join("")}</div>
+   <button class="total" data-act="accts"><span class="muted" style="font-size:13px">Across your accounts · edit</span><b class="num">${mny(tot)}</b></button>
+   <div class="jars">${GOALS.map(g0=>{const g=GL(g0),G=S.goals[g.k],v=+G[g.f]||0,p=Math.min(100,Math.round(v/(+G.target||1)*100));return `<button class="jar" data-act="jar" data-id="${g.k}"><span class="gl"><span class="fl" style="--c:${g.c};height:${p}%"></span><span class="pc num">${p}%</span></span><small>${g.name}<br>${mny(v)}</small></button>`}).join("")}</div>
    <p class="muted" style="margin:0;font-size:13px">${esc(S.vaultNote||"Fill the jars from left to right.")}</p></div>
   ${friendsMgr()}<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Sync & backup</h2><span class="eyebrow">your data, your file</span></div>${SB?(UID?`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px;min-width:0;overflow-wrap:anywhere">Syncing as ${esc(EMAIL)}</span><button class="btn soft" data-act="signout">Sign out</button></div>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<div class="row"><button class="btn soft" data-act="export">Export backup</button><label class="btn soft" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" id="imp" hidden></label></div></div>
   ${shelf()}
@@ -699,14 +711,14 @@ function rateQ(q){return q>=.85?"ext":q>=.6?"prod":q>=.35?"calm":q>=.12?"relax":
 // The climb: progress P runs 0-100% (OVR 60-99). A perfect day adds 0.45% (less as you climb), a good week ~1.8%, a perfect week ~3%. A day with nothing slips 0.2%.
 function series(){if(_ovr)return _ovr;const out={};let P=0;const t=dateOf(today());
   for(let d=dateOf(S.start||today());d<=t;d.setDate(d.getDate()+1)){const k=dkey(d),{q}=dayQ(k);let r,delta=0;
-    if(DY(k).rating==="rest"&&protectedDay(k))r="rest";else{r=rateQ(q);if(k===today()&&r==="not")r=null;if(r==="not")delta=graceDay(k)?0:-.2;else if(r)delta=.45*Math.pow(q,1.5)*(1.05-.25*P/100)}
+    if(DY(k).rating==="rest"&&protectedDay(k))r="rest";else{r=rateQ(q);if(k===today()&&r==="not")r=null;if(r==="not")delta=graceDay(k)||chill()?0:-.2;else if(r)delta=.45*Math.pow(q,1.5)*(1.05-.25*P/100)}
     P=Math.max(0,Math.min(100,P+delta));out[k]={P,delta,q,r}}return _ovr=out}
 function ratingOf(k){const x=series()[k];return x?x.r:null}
 // Recovery days protect streak and rating, up to 2 in any 7-day stretch.
-function protectedDay(k){const r=R(DY(k).rating);if(!r||!r.rec)return false;let n=0;const b=dateOf(k);for(let i=1;i<7;i++){const x=R(DY(kOf(b,i)).rating);if(x&&x.rec)n++}return n<2}
+function protectedDay(k){const r=R(DY(k).rating);if(!r||!r.rec)return false;let n=0;const b=dateOf(k);for(let i=1;i<7;i++){const x=R(DY(kOf(b,i)).rating);if(x&&x.rec)n++}return n<SET().rest}
 function momentum(ids,base=new Date()){let a=0,e=0;for(let i=0;i<14;i++){const k=kOf(base,i);if(dayN(k)<0)break;if(protectedDay(k))continue;if(graceDay(k)&&!(S.log[k]||[]).length&&i>0)continue;const w=Math.pow(.88,i);
   for(const id of ids){const h=H(id);if(!h)continue;const d=done(id,k);if(d)a+=w;if(i>0||d)e+=w*h.freq/7}}return e?Math.min(100,Math.round(a/e*100)):0}
-function streak(){let n=0;const b=new Date();for(let i=(S.log[today()]||[]).length?0:1;i<400;i++){const k=kOf(b,i);if(dayN(k)<0)break;if((S.log[k]||[]).length){n++;continue}if(protectedDay(k)||graceDay(k))continue;break}return n}
+function streak(){let n=0,miss=0;const b=new Date();for(let i=(S.log[today()]||[]).length?0:1;i<400;i++){const k=kOf(b,i);if(dayN(k)<0)break;if((S.log[k]||[]).length){n++;miss=0;continue}if(protectedDay(k)||graceDay(k))continue;if(chill()&&!miss){miss=1;continue}break}return n}
 // Habit strength: each rep closes 7% of the gap to automatic; a missed day fades it slightly (Lally et al., 2010 style curve).
 function strengths(){if(_str)return _str;const out={},t=dateOf(today());for(const h of HABITS){let s=0;out[h.id]={};for(let d=dateOf(S.start||today());d<=t;d.setDate(d.getDate()+1)){const k=dkey(d);if(done(h.id,k))s+=.07*(1-s);else if(!protectedDay(k))s*=.995;out[h.id][k]=s}}return _str=out}
 const strAt=(id,k)=>{const m=strengths()[id];return m&&m[k]!=null?m[k]:0};
@@ -848,7 +860,7 @@ function sMyChal(){const L=S.myChal||[];return `<div class="shh"><div><span clas
 let MYCODE="", FR=[], FRC={code:"",err:"",busy:false,del:null};
 function cardData(){const k=today(),x=series()[k]||{},r=R(x.r),L=lvl(txp());
   const recent=Object.values(E).filter(e=>e.habit!=="journal").sort((a,b)=>b.ts-a.ts).slice(0,6).map(e=>{const h=H(e.habit);return{h:h?h.name:e.habit,v:h?h.verb:"",ts:e.ts,num:e.num||"",num2:e.num2||"",title:e.title||"",rating:e.rating||0,kind:h?h.kind:""}});
-  return{name:S.name||"Friend",ovr:+ovrOn(k).toFixed(1),lvl:L.lv,title:titleFor(L.lv),streak:streak(),day:r?r.name:"",dayC:x.r||"",wk:+wkGain().toFixed(2),
+  return{mode:SET().mode,name:S.name||"Friend",ovr:+ovrOn(k).toFixed(1),lvl:L.lv,title:titleFor(L.lv),streak:streak(),day:r?r.name:"",dayC:x.r||"",wk:+wkGain().toFixed(2),
     today:(S.log[k]||[]).map(id=>H(id)?.name).filter(Boolean),traits:TRAITS.map(t=>({n:t.name,m:momentum(TH(t))})),recent,at:Date.now()}}
 let cardT=null;function sbCardQueue(){if(!SB||!UID||!MYCODE)return;clearTimeout(cardT);cardT=setTimeout(async()=>{await SB.from("lifemax_profiles").update({card:cardData(),updated_at:new Date().toISOString()}).eq("user_id",UID)},1500)}
 async function sbProfile(){const{data,error}=await SB.from("lifemax_profiles").select("code").eq("user_id",UID).maybeSingle();if(error)return;
@@ -863,7 +875,7 @@ function friendStrip(){const vis=FR.filter(f=>f.card);if(!vis.length)return"";
   const me={id:"me",card:{...cardData(),name:S.name||"You"},me:true};vis.forEach(f=>{if(!f.card.name||f.card.name==="Friend")f.card={...f.card,name:"No name set"}}),rows=[me,...vis].sort((a,b)=>b.card.ovr-a.card.ovr);
   return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Squad</h2><button class="eyebrow" data-act="share" style="text-decoration:underline">share my card</button></div><div class="squad">${rows.map((f,i)=>{const c=f.card,col=(R(c.dayC)||{}).c||"var(--line)";
    return `<button class="srow ${f.me?"me":""} ${i===0?"first":""}" ${f.me?'data-act="ovr"':`data-act="friend" data-id="${f.id}"`} style="--c:${col}"><span class="rk">${i+1}</span><span class="av">${esc((c.name||"?")[0].toUpperCase())}</span>
-   <span class="nm"><b>${esc(f.me?(S.name||"You")+" (you)":fname(f))}</b><span>${c.day?esc(c.day):"Nothing logged yet"} · ${c.streak}🔥</span></span>
+   <span class="nm"><b>${esc(f.me?(S.name||"You")+" (you)":fname(f))}</b><span>${c.day?esc(c.day):"Nothing logged yet"} · ${c.streak}🔥${c.mode==="chill"?'<span class="chill">chill</span>':""}</span></span>
    <span class="ov num">${c.ovr.toFixed(1)}<small class="${c.wk>0?"up":c.wk<0?"dn":"muted"}">${c.wk>0?"+":""}${(+c.wk).toFixed(2)}% wk</small></span></button>`}).join("")}</div></div>`}
 function friendsMgr(){if(!SB||!UID)return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Friends</h2></div><div class="field"><label for="fr-name">Your name</label><input id="fr-name" maxlength="20" value="${esc(S.name||"")}" data-act="setname" placeholder="Your first name"></div><p class="muted" style="margin:0;font-size:14px">Sign in to sync first, then you can link up with friends.</p></div>`;
   return `<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Friends</h2><span class="eyebrow">they see your card, not your journal</span></div>
@@ -975,14 +987,34 @@ function careCard(){const d=DY(today());if(!d.crisis)return"";
   <p style="margin:0;font-size:15px;line-height:1.5">If you're thinking about hurting yourself, talk to someone right now. It's free, private, and open 24/7.</p>
   <div class="row"><a class="btn solid" href="tel:988" style="text-decoration:none">Call 988</a><a class="btn soft" href="sms:988" style="text-decoration:none;color:var(--ink)">Text 988</a></div>
   <p class="muted" style="margin:0;font-size:13px">988 Suicide & Crisis Lifeline (US). You can also text HOME to 741741. If you're in danger right now, call 911.</p></div>`}
+
+/* ---- settings ---- */
+const SET=()=>({mode:"grind",theme:"system",fx:true,alerts:true,rest:2,startTab:"feed",hideMoney:false,big:false,...(S.settings||{})});
+const chill=()=>SET().mode==="chill";
+function applySettings(){const t=SET();const r=document.documentElement;if(t.theme==="system")delete r.dataset.theme;else r.dataset.theme=t.theme;document.body.style.zoom=t.big?"1.1":"";
+  const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=getComputedStyle(document.body).backgroundColor||"#0B0C0F"}
+const mny=n=>SET().hideMoney?"$•••":money(n);
+function sSettings(){const t=SET();
+  const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`<button class="${String(t[k])===String(v)?"on":""}" data-act="set" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
+  const tog=(k,b,sm)=>`<button class="tog ${t[k]?"on":""}" data-act="set" data-k="${k}" data-v="${!t[k]}"><span><b>${b}</b><small>${sm}</small></span><span class="sw"></span></button>`;
+  return `<div class="shh"><div><span class="eyebrow">Life Max</span><h2>Settings</h2></div>${X}</div>
+  <div class="setgroup"><h3>Mode</h3>${seg("mode",[["grind","Grind"],["chill","Chill"]])}
+   <p>${t.mode==="chill"?"Chill: empty days don't cost you, one missed day won't break your streak, and reminders only nudge when something's really slipped. Gains are the same, so your OVR still means something.":"Grind: the full climb. Empty days slip your rating a little, streaks reset on a miss, and you get the falling-behind alerts."}</p></div>
+  <div class="setgroup"><h3>Appearance</h3>${seg("theme",[["system","Auto"],["dark","Dark"],["light","Light"]])}${tog("big","Larger text","Bumps everything up about 10%")}${tog("fx","Celebrations","Sparks and pop-ups when you claim things")}</div>
+  <div class="setgroup"><h3>Nudges</h3>${tog("alerts","Falling-behind alerts","Show habits that are slipping on your Feed")}
+   <div><b style="font-size:15px">Rest days per week</b><p style="margin:2px 0 8px">Marked rest days freeze your rating and streak.</p>${seg("rest",[[1,"1"],[2,"2"],[3,"3"],[4,"4"]])}</div></div>
+  <div class="setgroup"><h3>Privacy</h3>${tog("hideMoney","Hide money amounts","Blur balances and jars when showing your phone to someone")}</div>
+  <div class="setgroup"><h3>Open the app on</h3>${seg("startTab",[["feed","Feed"],["today","Today"],["vision","Vision"],["me","Me"]])}</div>
+  <div class="setgroup"><h3>Account</h3><div class="row"><button class="btn soft" data-act="editname">Edit name</button>${SB?(UID?`<button class="btn soft" data-act="signout">Sign out</button>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<button class="btn soft" data-act="export">Export backup</button></div>
+   <p>${UID?"Syncing as "+esc(EMAIL):"Not syncing. Progress is saved on this phone only."}</p></div>`}
 /* ======== render ======== */
-function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
+function render(anim){_str=null;_ovr=null;applySettings();rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
    v.innerHTML=t==="feed"?vFeed():t==="today"?vToday():t==="vision"?vVision():vMe();if(anim){v.classList.remove("enter");void v.offsetWidth;v.classList.add("enter")}}}
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
 function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-|ck-|nm-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="settings"?sSettings():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
 function closeSheet(){if(REC){try{REC.stop()}catch(e){}}sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
 function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};const lastBook=h.kind==="read"&&!ex.title?(Object.values(E).filter(e=>e.habit==="read"&&e.title).sort((a,b)=>b.ts-a.ts)[0]||{}).title||"":"";
@@ -1045,6 +1077,8 @@ document.addEventListener("click",async e=>{
   if(a==="savename"){const v=NM.v.trim();if(id){const n={...(S.nick||{})};if(v)n[id]=v;else delete n[id];S.nick=n;save();closeSheet();render();toast(v?"Nickname saved":"Nickname cleared");return}
     S.name=v;save();closeSheet();render();await pushCardNow();toast("Name updated");return}
   if(a==="clearnick"){const n={...(S.nick||{})};delete n[id];S.nick=n;save();closeSheet();render();toast("Using their real name");return}
+  if(a==="settings")return openSheet("settings");
+  if(a==="set"){const k=b.dataset.k;let v=b.dataset.v;if(v==="true")v=true;else if(v==="false")v=false;else if(/^\d+$/.test(v))v=+v;S.settings={...(S.settings||{}),[k]:v};save();render();renderSheet();return}
   if(a==="share"){shareCard();return}
   if(a==="sharego"){const f=SHARE.file;try{if(f&&navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"My Life Max card"});return}}catch(e){if(e&&e.name==="AbortError")return}
     const l=document.createElement("a");l.href=SHARE.url;l.download=f?f.name:"lifemax.png";document.body.appendChild(l);l.click();l.remove();toast("Saved the image");return}
@@ -1121,7 +1155,7 @@ async function shrink(file){const url=URL.createObjectURL(file);try{const img=aw
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
 
 /* ======== storage ======== */
-function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal","nick"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
+function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal","nick","settings"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
   Object.assign(o.accts,d.accts||{});for(const k in o.goals)Object.assign(o.goals[k],(d.goals||{})[k]||{});return o}
 function persistLocal(){try{localStorage.setItem("lifemax",JSON.stringify(S));localStorage.setItem("lifemax_entries",JSON.stringify(E))}catch(e){}}
 function save(){S.updatedAt=Date.now();persistLocal();sbQueue();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
@@ -1131,7 +1165,7 @@ async function deleteEntry(id){delete E[id];persistLocal();sbDelete(id);if(!entr
 const setStatus=t=>$("status").textContent=t;
 
 try{const l=localStorage.getItem("lifemax");if(l)S=merge(JSON.parse(l));const le=localStorage.getItem("lifemax_entries");if(le)E=JSON.parse(le)||{}}catch(e){}
-render(true);setStatus("Saved on this device");
+tab=["feed","today","vision","me"].includes(SET().startTab)?SET().startTab:"feed";render(true);setStatus("Saved on this device");
 (async()=>{
   const use=window.claude&&window.claude.use?n=>window.claude.use(n):async()=>null;
   const [db,assets,sample]=await Promise.all([use("db"),use("assets"),use("sample")]);
