@@ -659,7 +659,10 @@ function paceOn(k){const exp=HABITS.reduce((a,h)=>a+h.freq/7,0);return Math.min(
 // Day quality (0-1) comes only from what you logged. You never pick the label, except Rest.
 function dayQ(k){const l=S.log[k]||[],n=l.length,exp=HABITS.reduce((a,h)=>a+h.freq/7,0),pace=Math.min(1,n/exp),d=DY(k);
   const ch=(d.done||[]).filter(x=>(d.picks||[]).includes(x)).length/3,pr=n?l.filter(id=>hasProof(E[k+"_"+id])).length/n:0,qs=Math.min(1,Object.values(S.qd||{}).filter(x=>x===k).length*.5);
-  return{q:Math.min(1,.55*pace+.25*ch+.1*pr+.1*qs),pace,ch,pr,qs}}
+  const tl=(d.todos||[]).filter(t=>!t.moved),td=tl.length?tl.filter(t=>t.done).length/tl.length:null;
+  // With a to-do list that day, finishing it counts for 10%; without one, habits carry that weight.
+  const q=td===null?.55*pace+.25*ch+.1*pr+.1*qs:.5*pace+.2*ch+.1*pr+.1*qs+.1*td;
+  return{q:Math.min(1,q),pace,ch,pr,qs,td}}
 function rateQ(q){return q>=.85?"ext":q>=.6?"prod":q>=.35?"calm":q>=.12?"relax":"not"}
 // The climb: progress P runs 0-100% (OVR 60-99). A perfect day adds 0.45% (less as you climb), a good week ~1.8%, a perfect week ~3%. A day with nothing slips 0.2%.
 function series(){if(_ovr)return _ovr;const out={};let P=0;const t=dateOf(today());
@@ -711,7 +714,7 @@ function qpart(n,v){return `<div class="part"><span>${n}</span><span class="num 
 function restBtn(k){const rest=DY(k).rating==="rest";return `<button class="btn ${rest?"solid":"soft"}" data-act="rest" data-k="${k}">${rest?"Rest day ✓ · tap to undo":"Mark as rest day"}</button><p class="muted" style="margin:0;font-size:12px">Rest days freeze your rating and streak. Up to 2 a week; after that they count like normal days.</p>`}
 function rateRow(k){const x=series()[k]||{},r=R(x.r),dq=dayQ(k);
   return `<div class="todayrate"><div class="tr-h"><span class="rchip on" style="--c:${r?r.c:"var(--line)"}"><i></i>${r?r.name:"Nothing logged yet"}</span><span class="num ${x.delta>0?"up":x.delta<0?"dn":"muted"}">${x.delta>0?"+":""}${(x.delta||0).toFixed(2)}% to overall</span></div>
-  <div class="parts">${qpart("Habits vs Future You's pace · 55%",dq.pace)}${qpart("Daily challenge · 25%",dq.ch)}${qpart("Proof posted · 10%",dq.pr)}${qpart("Quests cleared · 10%",dq.qs)}</div>${restBtn(k)}</div>`}
+  <div class="parts">${qpart("Habits vs Future You's pace · "+(dq.td===null?55:50)+"%",dq.pace)}${qpart("Daily challenge · "+(dq.td===null?25:20)+"%",dq.ch)}${dq.td!==null?qpart("To-do list · 10%",dq.td):""}${qpart("Proof posted · 10%",dq.pr)}${qpart("Quests cleared · 10%",dq.qs)}</div>${restBtn(k)}</div>`}
 function lookChart(){const n=Math.min(30,dayN(today())+1),ks=[];for(let i=n-1;i>=0;i--)ks.push(daysAgo(i));const vals=ks.map(ovrOn);
   const W=340,Hh=150,L=28,Rp=10,Tp=10,B=22,lo=Math.max(60,Math.floor(Math.min(...vals))-1),hi=Math.max(lo+3,Math.min(99,Math.ceil(Math.max(...vals))+1));
   const x=i=>L+(n>1?i/(n-1):.5)*(W-L-Rp),y=v=>Tp+(1-(v-lo)/(hi-lo))*(Hh-Tp-B);
@@ -744,7 +747,7 @@ function sOvr(){const P=(series()[today()]||{P:0}).P,o=ovrOn(today()),wk=wkGain(
 function sDay(k){const d=dateOf(k),x=series()[k]||{},r=R(x.r),dq=dayQ(k),hs=(S.log[k]||[]).map(id=>H(id)?.name).filter(Boolean),dd=DY(k),ch=(dd.done||[]).map(id=>CH(id)?.[1]).filter(Boolean);
   return `<div class="shh"><div><span class="eyebrow">${d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</span><h2>${ovrOn(k).toFixed(1)} OVR <span class="${x.delta>0?"up":x.delta<0?"dn":"muted"}" style="font-size:18px">${x.delta>0?"+":""}${(x.delta||0).toFixed(2)}%</span></h2></div>${X}</div>
   <div class="todayrate"><div class="tr-h"><span class="rchip on" style="--c:${r?r.c:"var(--line)"}"><i></i>${r?r.name:"In progress"}</span><span class="num muted">quality ${Math.round((x.q||0)*100)}</span></div>
-  <div class="parts">${qpart("Habits vs Future You's pace",dq.pace)}${qpart("Daily challenge",dq.ch)}${qpart("Proof posted",dq.pr)}${qpart("Quests cleared",dq.qs)}</div>
+  <div class="parts">${qpart("Habits vs Future You's pace",dq.pace)}${qpart("Daily challenge",dq.ch)}${dq.td!==null?qpart("To-do list",dq.td):""}${qpart("Proof posted",dq.pr)}${qpart("Quests cleared",dq.qs)}</div>
   ${k>=daysAgo(1)?restBtn(k):""}</div>
   <div class="later"><button data-act="close"><span><b>Locked in</b><br><span class="muted" style="font-size:13px">${hs.length?hs.join(", "):"Nothing logged"}</span></span><span>${hs.length}</span></button>
   ${TD(k).length?`<button data-act="close"><span><b>To-do</b><br><span class="muted" style="font-size:13px">${TD(k).map(t=>(t.done?"✓ ":t.moved?"→ ":t.dropped?"✕ ":"○ ")+esc(t.t)).join("<br>")}</span></span><span>${TD(k).filter(t=>t.done).length}/${TD(k).length}</span></button>`:""}
