@@ -341,6 +341,20 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:800;letter-spacing:-.01
 .todayrate{display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:20px;background:var(--surface)}
 .tr-h{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
 .todayrate .rchip{background:var(--surface2)}
+.todos{display:flex;flex-direction:column;gap:8px}
+.todo{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:16px;background:var(--surface)}
+.todo .ck{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--onhot)}
+.todo.done .ck{background:var(--mint);border-color:var(--mint)}
+.todo .tt{flex:1;min-width:0;font-size:15px;line-height:1.35;overflow-wrap:anywhere;text-align:left}
+.todo.done .tt{text-decoration:line-through;color:var(--muted)}
+.todo .rm{flex:none;color:var(--muted);font-size:18px;padding:0 4px}
+.todo small{display:block;font-size:11px;color:var(--amber)}
+.tdadd{display:flex;gap:8px}
+.tdadd input{flex:1;min-width:0;font-family:var(--body);font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.left{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:20px;background:color-mix(in srgb,var(--amber) 14%,var(--surface));border:1.5px solid color-mix(in srgb,var(--amber) 45%,transparent)}
+.left .li{display:flex;align-items:center;gap:8px;font-size:14px}
+.left .li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.left .li button{flex:none;font-size:12px;font-weight:600;padding:7px 11px;border-radius:999px;background:var(--surface)}
 </style>
 </head><body>
 <main>
@@ -443,7 +457,7 @@ const hasProof=e=>!!(e&&(e.note||e.num||e.num2||e.rating||e.title||e.photo||e.du
 function lvl(xp,s=1){let lv=1,need=100*s,left=xp;while(left>=need){left-=need;lv++;need=Math.round((100+40*(lv-1))*s)}return{lv,into:left,need}}
 function habitXP(k){return(S.log[k]||[]).reduce((a,id)=>{const h=H(id);if(!h)return a;const e=E[k+"_"+id];return a+h.xp+(hasProof(e)?Math.round(h.xp*.5):0)},0)}
 function questXP(pid){let x=0;for(const[q,,v]of P(pid).quests)if(S.quests[pid+":"+q])x+=v;return x}
-function txp(){let x=(S.bossRounds||0)*10+(S.bossXP||0);for(const k in S.log)x+=habitXP(k);for(const p of PILLARS)x+=questXP(p.id);const g=S.goals;
+function txp(){let x=(S.bossRounds||0)*10+(S.bossXP||0)+todoXP();for(const k in S.log)x+=habitXP(k);for(const p of PILLARS)x+=questXP(p.id);const g=S.goals;
   return x+chalXP()+Math.floor((+g.debt.paid||0)/20)+Math.floor(((+g.cushion.saved||0)+(+g.cali.saved||0)+(+g.move.saved||0))/50)}
 function streak(){let n=0;const d=new Date();if(!(S.log[dkey(d)]||[]).length)d.setDate(d.getDate()-1);while((S.log[dkey(d)]||[]).length){n++;d.setDate(d.getDate()-1)}return n}
 // Momentum: recency-weighted reps over 14 days vs the pace Future You keeps. Today only counts once done.
@@ -513,6 +527,7 @@ function vToday(){
    <defs><linearGradient id="pg"><stop offset="0" stop-color="var(--hot)"/><stop offset="1" stop-color="var(--amber)"/></linearGradient></defs></svg>
    <div class="in"><b class="num" style="font-family:var(--display)">${pc}%</b><span>PACE</span></div></div>
    <div><span class="eyebrow">${esc(d)}</span><h2>${pc>=100?"Locked in. Future you is proud.":pc>=60?"Good pace. Keep stacking.":tl.length?"You started. Stack 2 more.":"Day's open. Lock in one thing."}</h2><p>${tl.length} done today · post proof for +50% XP</p></div></div>
+  ${todoBlock()}
   ${bossCard()}
   ${board()}<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Lock in</h2><span class="eyebrow">tap to post proof</span></div>
   <div class="grid">${HABITS.map(h=>{const on=tl.includes(h.id);return `<button class="tile ${on?"on":""}" style="--c:${h.trait.c}" data-act="${on?"entryToday":"proof"}" data-id="${h.id}">
@@ -709,7 +724,7 @@ function lookChart(){const n=Math.min(30,dayN(today())+1),ks=[];for(let i=n-1;i>
   <div class="legend">${RATINGS.map(r=>`<span style="--c:${r.c}"><i></i>${r.name.replace(" day","")}</span>`).join("")}</div>`}
 function dayList(){const n=Math.min(14,dayN(today())+1);let out="";for(let i=0;i<n;i++){const k=daysAgo(i),d=dateOf(k),x=series()[k]||{},r=R(x.r),nh=(S.log[k]||[]).length;
   out+=`<button class="dayrow" data-act="day" data-k="${k}"><span class="dt">${d.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()}<b>${d.getDate()}</b></span>
-  <span class="rt"><b style="--c:${r?r.c:"var(--line)"}"><i></i>${r?r.name:"In progress"}</b><span>${nh} locked in${sweepOn(k)?" · clean sweep":""}</span></span>
+  <span class="rt"><b style="--c:${r?r.c:"var(--line)"}"><i></i>${r?r.name:"In progress"}</b><span>${nh} locked in${TD(k).length?" · "+TD(k).filter(t=>t.done).length+"/"+TD(k).length+" to-dos":""}${sweepOn(k)?" · clean sweep":""}</span></span>
   <span class="ov num">${ovrOn(k).toFixed(1)}<small class="${x.delta>0?"up":x.delta<0?"dn":"muted"}">${x.delta>0?"+":""}${(x.delta||0).toFixed(2)}%</small></span></button>`}return `<div class="days">${out}</div>`}
 function vBrain(){return `<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Where your brain is growing</h2></div>
   <div class="brainlist">${BRAIN.map(b=>{const x=brainScore(b);return `<div class="bsys" style="--c:${b.c}"><span class="rg">${b.region}</span><div class="bh"><b>${b.name}</b><span class="${x.g>0?"up":x.g<0?"dn":"muted"}">${x.g>0?"▲ growing":x.g<0?"▼ cooling":"steady"}</span></div><div class="bar"><i style="width:${Math.max(2,x.s)}%"></i></div><p>${b.note}</p></div>`}).join("")}</div>
@@ -732,6 +747,7 @@ function sDay(k){const d=dateOf(k),x=series()[k]||{},r=R(x.r),dq=dayQ(k),hs=(S.l
   <div class="parts">${qpart("Habits vs Future You's pace",dq.pace)}${qpart("Daily challenge",dq.ch)}${qpart("Proof posted",dq.pr)}${qpart("Quests cleared",dq.qs)}</div>
   ${k>=daysAgo(1)?restBtn(k):""}</div>
   <div class="later"><button data-act="close"><span><b>Locked in</b><br><span class="muted" style="font-size:13px">${hs.length?hs.join(", "):"Nothing logged"}</span></span><span>${hs.length}</span></button>
+  ${TD(k).length?`<button data-act="close"><span><b>To-do</b><br><span class="muted" style="font-size:13px">${TD(k).map(t=>(t.done?"✓ ":t.moved?"→ ":t.dropped?"✕ ":"○ ")+esc(t.t)).join("<br>")}</span></span><span>${TD(k).filter(t=>t.done).length}/${TD(k).length}</span></button>`:""}
   <button data-act="close"><span><b>Challenges</b><br><span class="muted" style="font-size:13px">${ch.length?ch.join(", "):"None cleared"}</span></span><span>${sweepOn(k)?"sweep":ch.length+"/3"}</span></button></div>`}
 function sCustom(){const c=cdraft;return `<div class="shh"><div><span class="eyebrow">Your categories</span><h2>Make your own</h2><p>Anything you want to track: reading, skincare, guitar, posting on TikTok.</p></div>${X}</div>
   <div class="field"><label for="c-name">Name</label><input id="c-name" maxlength="24" data-c="name" value="${esc(c.name)}" placeholder="e.g. Read 10 pages"></div>
@@ -766,6 +782,20 @@ function sBoss(){const b=BD;return `<div class="shh"><div><span class="eyebrow">
   <div class="field"><label for="b-next">Message when you beat it (optional)</label><input id="b-next" maxlength="80" data-bd="next" value="${esc(b.next)}"></div>
   ${b.err?`<p style="margin:0;color:var(--hot);font-size:14px">${esc(b.err)}</p>`:""}
   <div class="row" style="justify-content:space-between"><button class="btn hot" data-act="bsave">${b.isNew?"Start the fight":"Save"}</button>${S.boss&&!b.isNew?`<button class="skip" data-act="bdel">${b.del?"Tap again to remove":"Remove boss"}</button>`:""}</div>`}
+
+/* ---- to-do list: per day, unfinished items come back the next day ---- */
+const TD=k=>(S.days[k]&&S.days[k].todos)||[];
+function leftovers(){const out=[];for(let i=1;i<=7;i++){const k=daysAgo(i);for(const t of TD(k))if(!t.done&&!t.dropped&&!t.moved)out.push({k,t})}return out}
+function todoBlock(){const k=today(),list=TD(k),dn=list.filter(t=>t.done).length,lo=leftovers();
+  return `<div class="board"><div class="sec-h"><h2>To-do</h2><span class="eyebrow">${list.length?dn+"/"+list.length+" done":"+5 XP each"}</span></div>
+  ${lo.length?`<div class="left"><div class="row" style="justify-content:space-between"><b style="font-size:14px">You didn't finish ${lo.length} thing${lo.length===1?"":"s"}</b><button class="eyebrow" data-act="tdall" style="text-decoration:underline">move all to today</button></div>
+   ${lo.map(({k:dk,t})=>`<div class="li"><span>${esc(t.t)} <span class="muted" style="font-size:12px">· ${dk===daysAgo(1)?"yesterday":dateOf(dk).toLocaleDateString(undefined,{weekday:"short"})}</span></span><button data-act="tdmove" data-k="${dk}" data-id="${t.id}">Today</button><button data-act="tddrop" data-k="${dk}" data-id="${t.id}">Drop</button></div>`).join("")}</div>`:""}
+  ${list.length?`<div class="todos">${list.map(t=>`<div class="todo ${t.done?"done":""}"><button class="ck" data-act="tdtog" data-id="${t.id}" aria-label="${t.done?"Mark not done":"Mark done"}">${t.done?"✓":""}</button><button class="tt" data-act="tdtog" data-id="${t.id}">${esc(t.t)}${t.from?`<small>carried over</small>`:""}</button><button class="rm" data-act="tddel" data-id="${t.id}" aria-label="Delete">×</button></div>`).join("")}</div>`:""}
+  <div class="tdadd"><input id="td-new" maxlength="120" placeholder="Add something for today" enterkeyhint="done"><button class="btn solid" data-act="tdadd">Add</button></div></div>`}
+function setTodos(k,list){setDay(k,{todos:list})}
+function addTodo(){const i=$("td-new");const t=(i&&i.value||"").trim();if(!t)return;setTodos(today(),[...TD(today()),{id:"t"+Date.now().toString(36),t,done:false}]);save();render();setTimeout(()=>{const n=$("td-new");if(n)n.focus()},0)}
+function moveTodo(k,id){const t=TD(k).find(x=>x.id===id);if(!t)return;setTodos(k,TD(k).map(x=>x.id===id?{...x,moved:today()}:x));setTodos(today(),[...TD(today()),{id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),t:t.t,done:false,from:k}])}
+function todoXP(){let x=0;for(const k in S.days)for(const t of(S.days[k].todos||[]))if(t.done)x+=5;return x}
 /* ======== render ======== */
 function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
@@ -817,6 +847,12 @@ document.addEventListener("click",async e=>{
   if(a==="jar")return openSheet("jar",id);
   if(a==="accts")return openSheet("accts");
   if(a==="export"){const blob=new Blob([JSON.stringify({app:"lifemax",v:1,saved:new Date().toISOString(),S,E},null,1)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="lifemax-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Backup saved");return}
+  if(a==="tdadd"){addTodo();return}
+  if(a==="tdtog"){const k=today(),was=TD(k).find(x=>x.id===id);setTodos(k,TD(k).map(x=>x.id===id?{...x,done:!x.done}:x));if(was&&!was.done)burst(b,"+5");save();levelCheck(before);render();return}
+  if(a==="tddel"){setTodos(today(),TD(today()).filter(x=>x.id!==id));save();render();return}
+  if(a==="tdmove"){moveTodo(b.dataset.k,id);save();render();toast("Moved to today");return}
+  if(a==="tddrop"){const k=b.dataset.k;setTodos(k,TD(k).map(x=>x.id===id?{...x,dropped:true}:x));save();render();return}
+  if(a==="tdall"){for(const{k,t}of leftovers())moveTodo(k,t.id);save();render();toast("All moved to today");return}
   if(a==="opensignin"){SI.err="";return openSheet("signin")}
   if(a==="signin"){const em=SI.email.trim(),pw=SI.pass;if(!SB){SI.err="Sync isn't available offline. Try again with internet.";return renderSheet()}if(!em||!pw){SI.err="Enter your email and password.";return renderSheet()}
     SI.busy=true;SI.err="";renderSheet();const{error}=await SB.auth.signInWithPassword({email:em,password:pw});SI.busy=false;
@@ -873,7 +909,7 @@ document.addEventListener("change",async e=>{const i=e.target;
   if(a==="jset")S.goals={...S.goals,[i.dataset.id]:{...S.goals[i.dataset.id],[i.dataset.f]:v}};
   if(a==="aset")S.accts={...S.accts,[i.dataset.id]:v};
   save();levelCheck(before);i.blur();render()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSheet();$("lvup").classList.remove("on")}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="td-new"){e.preventDefault();addTodo();return}if(e.key==="Escape"){closeSheet();$("lvup").classList.remove("on")}});
 async function shrink(file){const url=URL.createObjectURL(file);try{const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url});
   const m=1400,s=Math.min(1,m/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
