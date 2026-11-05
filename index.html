@@ -858,7 +858,7 @@ async function loadFriends(){if(!SB||!UID)return;const[o,i]=await Promise.all([S
   let cards={};if(ids.length){const{data}=await SB.from("lifemax_profiles").select("user_id,card,updated_at").in("user_id",ids);(data||[]).forEach(r=>cards[r.user_id]=r.card)}
   FR=ids.map(id=>({id,iAdded:out.has(id),theyAdded:inc.has(id),card:cards[id]||null}));render();if(sheet&&sheet.t==="friend")renderSheet()}
 function friendStrip(){const vis=FR.filter(f=>f.card);if(!vis.length)return"";
-  const me={id:"me",card:{...cardData(),name:S.name||"You"},me:true},rows=[me,...vis].sort((a,b)=>b.card.ovr-a.card.ovr);
+  const me={id:"me",card:{...cardData(),name:S.name||"You"},me:true};vis.forEach(f=>{if(!f.card.name||f.card.name==="Friend")f.card={...f.card,name:"No name set"}}),rows=[me,...vis].sort((a,b)=>b.card.ovr-a.card.ovr);
   return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Squad</h2><button class="eyebrow" data-act="share" style="text-decoration:underline">share my card</button></div><div class="squad">${rows.map((f,i)=>{const c=f.card,col=(R(c.dayC)||{}).c||"var(--line)";
    return `<button class="srow ${f.me?"me":""} ${i===0?"first":""}" ${f.me?'data-act="ovr"':`data-act="friend" data-id="${f.id}"`} style="--c:${col}"><span class="rk">${i+1}</span><span class="av">${esc((c.name||"?")[0].toUpperCase())}</span>
    <span class="nm"><b>${esc(f.me?(S.name||"You")+" (you)":c.name)}</b><span>${c.day?esc(c.day):"Nothing logged yet"} · ${c.streak}🔥</span></span>
@@ -1082,7 +1082,7 @@ document.addEventListener("change",async e=>{const i=e.target;
     d.uploading=false;if(draft===d)renderSheet();return}
   const a=i.dataset&&i.dataset.act;if(!a)return;
   if(a==="vision"){S.vision=i.value.trim()||VISION_DEFAULT;save();return}
-  if(a==="setname"){S.name=i.value.trim();save();render();return}
+  if(a==="setname"){S.name=i.value.trim();save();render();if(SB&&UID&&MYCODE){clearTimeout(cardT);SB.from("lifemax_profiles").update({card:cardData(),updated_at:new Date().toISOString()}).eq("user_id",UID).then(()=>toast("Name updated for friends"))}return}
   if(a==="wedit"){ensurePillars();const p=S.pillars.find(x=>x.id===i.dataset.id);if(p){p[i.dataset.f]=i.value.trim()||(i.dataset.f==="name"?"Untitled":"");save();render()}return}
   const v=parseFloat(String(i.value).replace(/[^0-9.]/g,""))||0,before=txp();
   if(a==="jset")S.goals={...S.goals,[i.dataset.id]:{...S.goals[i.dataset.id],[i.dataset.f]:v}};
@@ -1153,6 +1153,7 @@ function loadSb(){return new Promise(res=>{const urls=["https://cdn.jsdelivr.net
   SB.auth.onAuthStateChange((ev,s)=>{const was=UID;setSession(s);if(UID&&UID!==was)sbPull();if(!UID&&was)render()});
   if(UID)sbPull();else{setStatus("Saved on this phone. Sign in on the Me tab to sync.");render();let seen=null;try{seen=localStorage.getItem("lifemax_si");localStorage.setItem("lifemax_si","1")}catch(e){}if(!seen&&!sheet)openSheet("signin")}
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&UID)sbPull()});
+  setInterval(()=>{if(UID&&document.visibilityState==="visible")loadFriends()},60000);
 })();
 </script>
 
