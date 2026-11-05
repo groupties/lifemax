@@ -380,10 +380,10 @@ const ICON={study:'<path d="M4 6a2 2 0 0 1 2-2h12v16H6a2 2 0 0 1-2-2z"/><path d=
  nospend:'<circle cx="12" cy="12" r="8"/><path d="M6 6l12 12"/>',
  apply:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
  film:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 12h18"/>',
- rest:'<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>',_custom:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>'};
+ rest:'<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>',read:'<path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6v13"/>',_custom:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>'};
 const TRAITS=[
  {id:"healthy",name:"Healthy",c:"var(--mint)",habits:["workout","run","clean"],worlds:["body","health"]},
- {id:"smart",name:"Smart",c:"var(--sky)",habits:["study","lang"],worlds:["school"]},
+ {id:"smart",name:"Smart",c:"var(--sky)",habits:["study","lang","read"],worlds:["school"]},
  {id:"creative",name:"Creative",c:"var(--hot)",habits:["brand","film"],worlds:["brand","life"]},
  {id:"driven",name:"Driven",c:"var(--amber)",habits:["apply"],worlds:["career","move"]},
  {id:"wealthy",name:"Wealthy",c:"var(--gold)",habits:["nospend"],worlds:["money"]},
@@ -392,6 +392,7 @@ const TRAITS=[
 const CORE=[
  {id:"journal",name:"Journal",xp:10,freq:5,kind:"journal",verb:"wrote in the journal"},
  {id:"study",name:"Study 25",xp:20,freq:5,kind:"mins",note:"What did you cover?",verb:"studied"},
+ {id:"read",name:"Read",xp:15,freq:5,kind:"read",note:"A line or idea worth keeping (optional)",verb:"read"},
  {id:"workout",name:"Workout",xp:25,freq:4,kind:"note",note:"What did you train?",verb:"worked out"},
  {id:"run",name:"Run",xp:15,freq:3,kind:"run",note:"How did it feel?",verb:"went for a run"},
  {id:"brand",name:"Brand 30",xp:20,freq:5,kind:"note",note:"What did you make or ship?",verb:"worked on the brand"},
@@ -442,7 +443,7 @@ const hasProof=e=>!!(e&&(e.note||e.num||e.num2||e.rating||e.title||e.photo||e.du
 function lvl(xp,s=1){let lv=1,need=100*s,left=xp;while(left>=need){left-=need;lv++;need=Math.round((100+40*(lv-1))*s)}return{lv,into:left,need}}
 function habitXP(k){return(S.log[k]||[]).reduce((a,id)=>{const h=H(id);if(!h)return a;const e=E[k+"_"+id];return a+h.xp+(hasProof(e)?Math.round(h.xp*.5):0)},0)}
 function questXP(pid){let x=0;for(const[q,,v]of P(pid).quests)if(S.quests[pid+":"+q])x+=v;return x}
-function txp(){let x=(S.bossRounds||0)*10;for(const k in S.log)x+=habitXP(k);for(const p of PILLARS)x+=questXP(p.id);const g=S.goals;
+function txp(){let x=(S.bossRounds||0)*10+(S.bossXP||0);for(const k in S.log)x+=habitXP(k);for(const p of PILLARS)x+=questXP(p.id);const g=S.goals;
   return x+chalXP()+Math.floor((+g.debt.paid||0)/20)+Math.floor(((+g.cushion.saved||0)+(+g.cali.saved||0)+(+g.move.saved||0))/50)}
 function streak(){let n=0;const d=new Date();if(!(S.log[dkey(d)]||[]).length)d.setDate(d.getDate()-1);while((S.log[dkey(d)]||[]).length){n++;d.setDate(d.getDate()-1)}return n}
 // Momentum: recency-weighted reps over 14 days vs the pace Future You keeps. Today only counts once done.
@@ -483,6 +484,7 @@ function storyRow(){return `<div class="stories">${TRAITS.map(t=>{const m=moment
 function postCard(e){const h=H(e.habit);if(!h)return"";const t=h.trait,c=t.c;let body="";
   if(h.kind==="run"&&(e.num||e.num2))body+=`<div class="big num">${e.num?esc(e.num)+" mi":""}${e.num2?`<small>${esc(e.num2)} min${e.num&&e.num2?" · "+(e.num2/e.num).toFixed(1)+" min/mi":""}</small>`:""}</div>`;
   if(h.kind==="mins"&&e.num)body+=`<div class="big num">${esc(e.num)}<small>minutes</small></div>`;
+  if(h.kind==="read"&&(e.num||e.title))body+=`<div class="big num">${e.num?esc(e.num):"📖"}<small>${e.num?"pages":""}${e.title?(e.num?" · ":"")+esc(e.title):""}</small></div>`;
   if(h.kind==="film"){if(e.title)body+=`<div class="big" style="font-size:24px">${esc(e.title)}</div>`;if(e.rating)body+=`<div class="stars">${"★".repeat(e.rating)}<span style="color:var(--line)">${"★".repeat(5-e.rating)}</span></div>`}
   if(h.kind==="journal"&&e.journal){body+=`<div class="big" style="font-size:22px">${esc(e.journal.title)}</div><div class="note">${esc(e.journal.summary)}</div>`;
     if(e.journal.themes?.length)body+=`<div class="tags">${e.journal.themes.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}${e.journal.mood?`<span class="tag">mood: ${esc(e.journal.mood)}</span>`:""}</div>`}
@@ -536,7 +538,7 @@ function vVision(){
   <div class="traits">${TRAITS.map(t=>{const s=traitScore(t),tr=trend(TH(t));return `<button class="trait" data-act="trait" data-id="${t.id}" style="--c:${t.c}">
    <b>${t.name}</b><span class="st ${tr}">${tr==="up"?"rising":tr==="dn"?"slipping":"steady"} · ${s}%</span><span class="bar"><i style="width:${s}%"></i></span></button>`}).join("")}</div>
   ${vBrain()}<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Quests</h2><span class="eyebrow">big moves</span></div>
-  <div class="worlds">${PILLARS.map(p=>{const tot=p.quests.length,dn=p.quests.filter(([q])=>S.quests[p.id+":"+q]).length;return `<button class="world ${p.id==="career"?"main":""}" style="--c:${(PCOL[p.id]||"var(--sky)")}" data-act="world" data-id="${p.id}"><b>${p.name}</b><span>${dn}/${tot} cleared</span><span class="bar"><i style="width:${dn/tot*100}%"></i></span></button>`}).join("")}</div></div>`}
+  <div class="worlds">${PILLARS.map(p=>{const tot=p.quests.length,dn=p.quests.filter(([q])=>S.quests[p.id+":"+q]).length;return `<button class="world ${p.id==="career"?"main":""}" style="--c:${(PCOL[p.id]||"var(--sky)")}" data-act="world" data-id="${p.id}"><b>${p.name}</b><span>${dn}/${tot} cleared</span><span class="bar"><i style="width:${dn/tot*100}%"></i></span></button>`}).join("")}<button class="world" data-act="wnew" style="border:1.5px dashed var(--line);background:transparent"><b>+ New world</b><span>Your own set of quests</span></button></div></div>`}
 function heat(){let cells="";const start=new Date();start.setDate(start.getDate()-start.getDay()-7*15);
   for(let i=0;i<16*7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const k=dkey(d),n=(S.log[k]||[]).length,future=d>new Date();
    cells+=`<i title="${k}: ${n}" style="${future?"opacity:.25;":""}${n?`background:color-mix(in srgb,var(--hot) ${Math.min(100,25+n*15)}%,var(--surface2))`:""}"></i>`}return cells}
@@ -554,6 +556,7 @@ function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.
    <div class="jars">${GOALS.map(g0=>{const g=GL(g0),G=S.goals[g.k],v=+G[g.f]||0,p=Math.min(100,Math.round(v/(+G.target||1)*100));return `<button class="jar" data-act="jar" data-id="${g.k}"><span class="gl"><span class="fl" style="--c:${g.c};height:${p}%"></span><span class="pc num">${p}%</span></span><small>${g.name}<br>${money(v)}</small></button>`}).join("")}</div>
    <p class="muted" style="margin:0;font-size:13px">${esc(S.vaultNote||"Fill the jars from left to right.")}</p></div>
   <div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Sync & backup</h2><span class="eyebrow">your data, your file</span></div>${SB?(UID?`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px;min-width:0;overflow-wrap:anywhere">Syncing as ${esc(EMAIL)}</span><button class="btn soft" data-act="signout">Sign out</button></div>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<div class="row"><button class="btn soft" data-act="export">Export backup</button><label class="btn soft" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" id="imp" hidden></label></div></div>
+  ${shelf()}
   <div style="display:flex;flex-direction:column;gap:4px"><div class="sec-h" style="margin-bottom:6px"><h2>Diary</h2><span class="eyebrow">${j.length} entries</span></div>
    ${j.length?`<div class="diary">${j.map(e=>{const d=new Date(e.ts);return `<button class="dline" data-act="entry" data-id="${esc(e._id)}"><span class="dt">${d.toLocaleDateString(undefined,{month:"short"}).toUpperCase()}<b>${d.getDate()}</b></span><span class="dx"><b>${esc(e.journal?.title||"Journal entry")}</b><p>${esc(e.journal?.summary||e.dump||"")}</p></span></button>`}).join("")}</div>`
    :`<div class="empty"><h3>No entries yet.</h3><p class="muted" style="margin:0">Brain-dump anything. Claude can shape it into a clean entry.</p><button class="btn hot" data-act="proof" data-id="journal">Write today's entry</button></div>`}</div>`}
@@ -568,6 +571,7 @@ function sPicker(){const tl=S.log[today()]||[];return `<div class="shh"><div><sp
 function sProof(){const h=H(draft.habit),k=draft.kind;let f="";
   if(k==="run")f+=`<div class="fields"><div class="field"><label for="p-num">Miles</label><input id="p-num" inputmode="decimal" data-d="num" value="${esc(draft.num)}"></div><div class="field"><label for="p-num2">Minutes</label><input id="p-num2" inputmode="decimal" data-d="num2" value="${esc(draft.num2)}"></div></div>`;
   if(k==="mins")f+=`<div class="field"><label for="p-num">Minutes</label><input id="p-num" inputmode="decimal" data-d="num" value="${esc(draft.num)}"></div>`;
+  if(k==="read")f+=`<div class="field"><label for="p-title">Book</label><input id="p-title" data-d="title" value="${esc(draft.title)}"></div><div class="field"><label for="p-num">Pages read</label><input id="p-num" inputmode="numeric" data-d="num" value="${esc(draft.num)}"></div>`;
   if(k==="film")f+=`<div class="field"><label for="p-title">Film</label><input id="p-title" data-d="title" value="${esc(draft.title)}"></div><div class="rate">${[1,2,3,4,5].map(n=>`<button data-act="rate" data-n="${n}" class="${draft.rating>=n?"on":""}" aria-label="${n} stars">★</button>`).join("")}</div>`;
   if(k==="journal"){f+=`<div class="field"><label for="p-dump">Brain dump. No order, no grammar.</label><textarea id="p-dump" class="dump" data-d="dump">${esc(draft.dump)}</textarea></div>`;
     if(SAMPLE)f+=`<button class="btn soft" data-act="structure" ${draft.busy?"disabled":""}>${draft.busy?"Claude is shaping it…":draft.journal?"Reshape with Claude":"Shape it into an entry with Claude"}</button>`;
@@ -590,11 +594,19 @@ function sEntry(id){const e=E[id];if(!e)return `<div class="shh"><h2>Post remove
   ${e.note?`<div class="note" style="white-space:pre-wrap">${esc(e.note)}</div>`:""}
   ${e.rating?`<div class="stars">${"★".repeat(e.rating)}</div>`:""}
   ${e.date===today()?`<div class="row"><button class="btn soft" data-act="proof" data-id="${e.habit}">Edit</button></div>`:""}`}
-function sWorld(id){const p=P(id),open=p.quests.filter(([q])=>!S.quests[id+":"+q]),dn=p.quests.filter(([q])=>S.quests[id+":"+q]),o=skip[id]||0,cur=open.length?open[o%open.length]:null,rest=open.filter(q=>q!==cur);
-  return `<div class="shh"><div><span class="eyebrow">Quests · ${dn.length}/${p.quests.length}</span><h2>${p.name}</h2><p>${p.why}</p></div>${X}</div>
-  ${cur?`<div class="now"><span class="eyebrow">Current quest · +${cur[2]} XP</span><div class="q">${esc(cur[1])}</div><div class="row" style="justify-content:space-between"><button class="btn hot" data-act="claim" data-id="${id}:${cur[0]}">Claim +${cur[2]} XP</button>${open.length>1?`<button class="skip" data-act="skip" data-id="${id}">Not now</button>`:""}</div></div>`:`<div class="card"><h3>Every quest here is done.</h3></div>`}
+function sWorld(id){const p=P(id);if(!p)return `<div class="shh"><h2>World removed</h2>${X}</div>`;const open=p.quests.filter(([q])=>!S.quests[id+":"+q]),dn=p.quests.filter(([q])=>S.quests[id+":"+q]),o=skip[id]||0,cur=open.length?open[o%open.length]:null,rest=open.filter(q=>q!==cur);
+  const head=`<div class="shh"><div><span class="eyebrow">Quests · ${dn.length}/${p.quests.length}</span><h2>${esc(p.name)}</h2><p>${esc(p.why||"")}</p></div>${X}</div>`;
+  const add=`<div class="card" style="gap:10px"><div class="field"><label for="q-new">Add a quest</label><input id="q-new" data-qd="text" value="${esc(QD.text)}" placeholder="e.g. Finish one book this month" maxlength="90"></div>
+   <div class="opts">${[20,40,80,150].map(n=>`<button class="opt ${QD.xp===n?"on":""}" data-act="qxp" data-id="${n}">+${n} XP</button>`).join("")}</div><button class="btn hot" data-act="qadd" data-id="${id}">Add quest</button></div>`;
+  if(QD.edit)return `${head}<div class="field"><label for="w-name">World name</label><input id="w-name" maxlength="24" value="${esc(p.name)}" data-act="wedit" data-id="${id}" data-f="name"></div>
+   <div class="field"><label for="w-why">What it's for</label><input id="w-why" maxlength="90" value="${esc(p.why||"")}" data-act="wedit" data-id="${id}" data-f="why"></div>
+   <div class="mine">${p.quests.map(q=>`<div><span>${esc(q[1])} <span class="muted">+${q[2]}</span></span><button data-act="qdel" data-id="${id}" data-q="${q[0]}">${QD.del===q[0]?"Tap again":"Delete"}</button></div>`).join("")||'<p class="muted" style="margin:0">No quests yet.</p>'}</div>
+   ${add}<div class="row" style="justify-content:space-between"><button class="btn solid" data-act="qedit">Done editing</button><button class="skip" data-act="wdel" data-id="${id}">${QD.del==="__world"?"Tap again to delete this world":"Delete world"}</button></div>`;
+  return `${head}
+  ${cur?`<div class="now"><span class="eyebrow">Current quest · +${cur[2]} XP</span><div class="q">${esc(cur[1])}</div><div class="row" style="justify-content:space-between"><button class="btn hot" data-act="claim" data-id="${id}:${cur[0]}">Claim +${cur[2]} XP</button>${open.length>1?`<button class="skip" data-act="skip" data-id="${id}">Not now</button>`:""}</div></div>`:`<div class="card"><h3>${p.quests.length?"Every quest here is done.":"No quests yet. Add your first one."}</h3></div>`}
   ${rest.length?`<div class="later">${rest.map(q=>`<button data-act="pick" data-id="${id}" data-q="${q[0]}"><span>${esc(q[1])}</span><span>+${q[2]}</span></button>`).join("")}</div>`:""}
-  ${dn.length?`<div style="display:flex;flex-direction:column;gap:8px"><span class="eyebrow">Cleared · tap to undo</span><div class="trophies">${dn.map(q=>`<button class="trophy" data-act="unclaim" data-id="${id}:${q[0]}">✓ ${esc(q[1])}</button>`).join("")}</div></div>`:""}`}
+  ${dn.length?`<div style="display:flex;flex-direction:column;gap:8px"><span class="eyebrow">Cleared · tap to undo</span><div class="trophies">${dn.map(q=>`<button class="trophy" data-act="unclaim" data-id="${id}:${q[0]}">✓ ${esc(q[1])}</button>`).join("")}</div></div>`:""}
+  ${add}<button class="btn soft" data-act="qedit">Edit this world</button>`}
 function sJar(k){const g=GL(GOALS.find(z=>z.k===k)),G=S.goals[k],v=+G[g.f]||0;
   return `<div class="shh"><div><span class="eyebrow">${g.sub}</span><h2>${g.name}</h2></div>${X}</div><div><div class="amt num">${money(v)}</div><span class="eyebrow">of ${money(G.target)}</span></div>
   <div class="quick">${[25,50,100,250].map(n=>`<button data-act="add" data-id="${k}" data-n="${n}">+$${n}</button>`).join("")}<button data-act="add" data-id="${k}" data-n="-25">−$25</button></div>
@@ -615,7 +627,7 @@ const CHAL=[
  ["c_phone","No phone for the first 30 minutes awake","grounded",20],["c_grat","Write 3 things you're grateful for","grounded",10],["c_breathe","5 minutes of slow breathing","grounded",10],["c_outside","20 minutes outside, no headphones","grounded",15],["c_call","Call or see someone you care about","grounded",15]];
 const CH=id=>CHAL.find(c=>c[0]===id);
 const BRAIN=[
- {id:"hippo",name:"Memory & Learning",region:"Hippocampus",c:"var(--sky)",habits:["workout","run","study","lang"],note:"Aerobic exercise has been linked to a larger hippocampus in adults, and learning a new language is linked to growth there too."},
+ {id:"hippo",name:"Memory & Learning",region:"Hippocampus",c:"var(--sky)",habits:["workout","run","study","lang","read"],note:"Aerobic exercise has been linked to a larger hippocampus in adults, and learning a new language is linked to growth there too."},
  {id:"pfc",name:"Focus & Self-control",region:"Prefrontal cortex",c:"var(--amber)",habits:["study","nospend","apply"],chal:1,note:"Choosing focus over the easy option, again and again, is how the brain's planning and impulse-control network gets practice."},
  {id:"amyg",name:"Emotional balance",region:"Amygdala regulation",c:"var(--lilac)",habits:["journal","rest"],note:"Putting feelings into words (\"affect labeling\") has been shown to calm the brain's alarm response. That's what journaling does."},
  {id:"bg",name:"Habit autopilot",region:"Basal ganglia",c:"var(--mint)",all:1,note:"Repeated actions shift toward automatic. In one well-known study, habits took a median of 66 days to stick, and missing one day didn't break them."},
@@ -729,23 +741,43 @@ function sCustom(){const c=cdraft;return `<div class="shh"><div><span class="eye
   ${(S.custom||[]).length?`<div class="mine">${S.custom.map(x=>`<div><span><b>${esc(x.name)}</b> <span class="muted">· ${T(x.trait)?.name} · ${x.freq}×/wk</span></span><button data-act="cdel" data-id="${x.id}">${c.del===x.id?"Tap again to delete":"Delete"}</button></div>`).join("")}</div>`:""}`}
 
 
-function bossCard(){const B=S.boss;if(!B||!B.rounds)return"";const r=S.bossRounds||0,n=B.rounds.length-1,won=B.quest?!!S.quests[B.quest]:!!B.won,hp=Math.max(0,100-Math.round(r*100/n));
-  if(won)return `<div class="boss won"><span class="eyebrow">Boss defeated</span><h3>${esc(B.title)} cleared. ${esc(B.next||"")}</h3></div>`;
-  return `<div class="boss"><span class="eyebrow">Boss fight · ${esc(B.title)}</span><h3>${esc(B.sub||"")} · ${hp}% HP</h3><div class="hpbar"><i style="width:${hp}%"></i></div><p>${esc(B.rounds[Math.min(r,n)])}</p>
+function bossCard(){const B=S.boss;if(!B||!B.rounds)return `<button class="mainq" data-act="bossedit"><span class="eyebrow">Boss fight</span><h3>Turn a big task into a boss</h3><span class="go">Break it into rounds and knock it out</span></button>`;
+  const r=S.bossRounds||0,n=B.rounds.length-1,won=B.quest?!!S.quests[B.quest]:!!B.won,hp=Math.max(0,100-Math.round(r*100/Math.max(1,n)));
+  if(won)return `<div class="boss won"><span class="eyebrow">Boss defeated</span><h3>${esc(B.title)} cleared. ${esc(B.next||"")}</h3><div class="row"><button class="btn hot" data-act="bossedit" data-id="new">New boss fight</button></div></div>`;
+  return `<div class="boss"><div class="row" style="justify-content:space-between"><span class="eyebrow">Boss fight · ${esc(B.title)}</span><button class="eyebrow" data-act="bossedit" style="text-decoration:underline">edit</button></div><h3>${esc(B.sub||"")} · ${hp}% HP</h3><div class="hpbar"><i style="width:${hp}%"></i></div><p>${esc(B.rounds[Math.min(r,n)])}</p>
   <div class="row">${r<n?`<button class="btn solid" data-act="round">Finish round ${r+1}</button>`:""}<button class="btn line" data-act="defeat">Beat it</button></div></div>`}
-function countsRow(){const c=S.counts||[];if(!c.length)return"";return `<div class="counts">${c.slice(0,3).map(x=>{const[y,m,d]=x.date.split("-").map(Number),n=daysTo(y,m-1,d);return `<div class="cd ${x.hot&&n<=30?"hot":""}"><b class="num">${n}</b><span>${esc(x.label)}</span></div>`}).join("")}</div>`}
+function countsRow(){const c=S.counts||[];return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Countdowns</h2><button class="eyebrow" data-act="counts" style="text-decoration:underline">${c.length?"edit":"add"}</button></div>
+  ${c.length?`<div class="counts">${c.slice(0,3).map(x=>{const[y,m,d]=x.date.split("-").map(Number),n=daysTo(y,m-1,d);return `<div class="cd ${x.hot&&n<=30?"hot":""}"><b class="num">${n}</b><span>${esc(x.label)}</span></div>`}).join("")}</div>`:`<button class="mainq" data-act="counts"><h3>Add a countdown</h3><span class="go">A deadline, a trip, a move date</span></button>`}</div>`}
+
+let QD={text:"",xp:40,edit:false,del:null}, CD={label:"",date:"",hot:false,del:null}, BD=null;
+function ensurePillars(){S.pillars=JSON.parse(JSON.stringify(S.pillars&&S.pillars.length?S.pillars:DEFAULT_PILLARS))}
+function shelf(){const by={};for(const e of Object.values(E)){if(e.habit!=="read")continue;const t=(e.title||"Untitled").trim();const b=by[t]=by[t]||{t,pages:0,n:0,last:0};b.pages+=(+e.num||0);b.n++;b.last=Math.max(b.last,e.ts||0)}
+  const list=Object.values(by).sort((a,b)=>b.last-a.last);if(!list.length)return"";const tot=list.reduce((a,b)=>a+b.pages,0);
+  return `<div style="display:flex;flex-direction:column;gap:4px"><div class="sec-h" style="margin-bottom:6px"><h2>Bookshelf</h2><span class="eyebrow">${tot.toLocaleString()} pages</span></div><div class="diary">${list.map(b=>`<div class="dline"><span class="dt">PAGES<b>${b.pages}</b></span><span class="dx"><b>${esc(b.t)}</b><p>${b.n} session${b.n===1?"":"s"} · last ${ago(b.last)}</p></span></div>`).join("")}</div></div>`}
+function sCounts(){const c=S.counts||[];return `<div class="shh"><div><span class="eyebrow">Today tab</span><h2>Countdowns</h2><p>The first 3 show on Today.</p></div>${X}</div>
+  ${c.length?`<div class="mine">${c.map((x,i)=>`<div><span>${esc(x.label)} <span class="muted">· ${esc(x.date)}</span></span><button data-act="cddel" data-id="${i}">${CD.del===i?"Tap again":"Delete"}</button></div>`).join("")}</div>`:""}
+  <div class="card" style="gap:12px"><div class="field"><label for="cd-label">What are you counting down to?</label><input id="cd-label" maxlength="40" data-cd="label" value="${esc(CD.label)}" placeholder="e.g. days to the 5K"></div>
+  <div class="field"><label for="cd-date">Date</label><input id="cd-date" type="date" data-cd="date" value="${esc(CD.date)}"></div>
+  <div class="opts"><button class="opt ${CD.hot?"on":""}" data-act="cdhot">Turn red in the last 30 days</button></div><button class="btn hot" data-act="cdadd">Add countdown</button></div>`}
+function sBoss(){const b=BD;return `<div class="shh"><div><span class="eyebrow">Boss fight</span><h2>${b.isNew?"New boss":"Edit boss"}</h2><p>Break a big task into rounds. Each round knocks off HP.</p></div>${X}</div>
+  <div class="field"><label for="b-title">Boss name</label><input id="b-title" maxlength="40" data-bd="title" value="${esc(b.title)}" placeholder="e.g. Final exam, Launch the drop"></div>
+  <div class="field"><label for="b-sub">Short description</label><input id="b-sub" maxlength="40" data-bd="sub" value="${esc(b.sub)}" placeholder="e.g. Ch. 7–12"></div>
+  <div class="field"><label for="b-rounds">Rounds, one per line</label><textarea id="b-rounds" data-bd="rounds" placeholder="Round 1: ...&#10;Round 2: ...">${esc(b.rounds)}</textarea></div>
+  <div class="field"><label for="b-next">Message when you beat it (optional)</label><input id="b-next" maxlength="80" data-bd="next" value="${esc(b.next)}"></div>
+  ${b.err?`<p style="margin:0;color:var(--hot);font-size:14px">${esc(b.err)}</p>`:""}
+  <div class="row" style="justify-content:space-between"><button class="btn hot" data-act="bsave">${b.isNew?"Start the fight":"Save"}</button>${S.boss&&!b.isNew?`<button class="skip" data-act="bdel">${b.del?"Tap again to remove":"Remove boss"}</button>`:""}</div>`}
 /* ======== render ======== */
 function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
    v.innerHTML=t==="feed"?vFeed():t==="today"?vToday():t==="vision"?vVision():vMe();if(anim){v.classList.remove("enter");void v.offsetWidth;v.classList.add("enter")}}}
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
-function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-)/.test(f))return;
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
 function closeSheet(){sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
-function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};
-  draft={habit:id,kind:h.kind,note:ex.note||"",num:ex.num||"",num2:ex.num2||"",title:ex.title||"",rating:ex.rating||0,dump:ex.dump||"",journal:ex.journal||null,photo:ex.photo||"",preview:ex.photo?photoSrc(ex.photo):"",busy:false,uploading:false,err:""};
+function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};const lastBook=h.kind==="read"&&!ex.title?(Object.values(E).filter(e=>e.habit==="read"&&e.title).sort((a,b)=>b.ts-a.ts)[0]||{}).title||"":"";
+  draft={habit:id,kind:h.kind,note:ex.note||"",num:ex.num||"",num2:ex.num2||"",title:ex.title||lastBook,rating:ex.rating||0,dump:ex.dump||"",journal:ex.journal||null,photo:ex.photo||"",preview:ex.photo?photoSrc(ex.photo):"",busy:false,uploading:false,err:""};
   openSheet("proof",id)}
 
 /* ======== actions ======== */
@@ -763,7 +795,25 @@ document.addEventListener("click",async e=>{
   if(a==="entryToday")return openSheet("entry",today()+"_"+id);
   if(a==="entry")return openSheet("entry",id);
   if(a==="trait")return openSheet("trait",id);
-  if(a==="world")return openSheet("world",id);
+  if(a==="world"){QD={text:"",xp:40,edit:false,del:null};return openSheet("world",id)}
+  if(a==="qxp"){QD.xp=+id;return renderSheet()}
+  if(a==="qedit"){QD.edit=!QD.edit;QD.del=null;return renderSheet()}
+  if(a==="qadd"){const t=QD.text.trim();if(!t){toast("Type the quest first");return}ensurePillars();const p=S.pillars.find(x=>x.id===id);p.quests.push(["q"+Date.now().toString(36),t,QD.xp]);QD.text="";save();render();renderSheet();toast("Quest added");return}
+  if(a==="qdel"){const q=b.dataset.q;if(QD.del!==q){QD.del=q;return renderSheet()}ensurePillars();const p=S.pillars.find(x=>x.id===id);p.quests=p.quests.filter(z=>z[0]!==q);QD.del=null;save();render();renderSheet();return}
+  if(a==="wdel"){if(QD.del!=="__world"){QD.del="__world";return renderSheet()}ensurePillars();S.pillars=S.pillars.filter(x=>x.id!==id);if(!S.pillars.length)S.pillars=[{id:"w"+Date.now().toString(36),name:"New world",why:"",quests:[]}];save();closeSheet();render();toast("World deleted");return}
+  if(a==="wnew"){ensurePillars();const nid="w"+Date.now().toString(36);S.pillars.push({id:nid,name:"New world",why:"",quests:[]});save();render();QD={text:"",xp:40,edit:true,del:null};return openSheet("world",nid)}
+  if(a==="counts"){CD={label:"",date:"",hot:false,del:null};return openSheet("counts")}
+  if(a==="cdhot"){CD.hot=!CD.hot;return renderSheet()}
+  if(a==="cdadd"){if(!CD.label.trim()||!/^\d{4}-\d{2}-\d{2}$/.test(CD.date)){toast("Add a name and a date");return}S.counts=[...(S.counts||[]),{label:CD.label.trim(),date:CD.date,hot:CD.hot}];CD={label:"",date:"",hot:false,del:null};save();render();renderSheet();toast("Countdown added");return}
+  if(a==="cddel"){const i=+id;if(CD.del!==i){CD.del=i;return renderSheet()}S.counts=(S.counts||[]).filter((x,j)=>j!==i);CD.del=null;save();render();renderSheet();return}
+  if(a==="bossedit"){const B=S.boss,isNew=id==="new"||!B||!B.rounds;const rs=isNew?[]:B.rounds.slice();if(rs.length&&/^All rounds done/.test(rs[rs.length-1]))rs.pop();
+    BD={isNew,title:isNew?"":B.title||"",sub:isNew?"":B.sub||"",rounds:rs.join("\n"),next:isNew?"":B.next||"",err:"",del:false};return openSheet("boss")}
+  if(a==="bsave"){const rs=BD.rounds.split("\n").map(x=>x.trim()).filter(Boolean);if(!BD.title.trim()||!rs.length){BD.err="Give it a name and at least one round.";return renderSheet()}
+    rs.push("All rounds done. Go finish it.");
+    if(BD.isNew){S.bossXP=(S.bossXP||0)+(S.bossRounds||0)*10;S.bossRounds=0;S.boss={title:BD.title.trim(),sub:BD.sub.trim(),rounds:rs,next:BD.next.trim(),quest:"boss:"+Date.now().toString(36)}}
+    else{S.boss={...S.boss,title:BD.title.trim(),sub:BD.sub.trim(),rounds:rs,next:BD.next.trim()};S.bossRounds=Math.min(S.bossRounds||0,rs.length-1)}
+    save();closeSheet();render();toast(BD.isNew?"Boss fight started":"Boss saved");return}
+  if(a==="bdel"){if(!BD.del){BD.del=true;return renderSheet()}S.bossXP=(S.bossXP||0)+(S.bossRounds||0)*10;S.bossRounds=0;S.boss=null;save();closeSheet();render();return}
   if(a==="jar")return openSheet("jar",id);
   if(a==="accts")return openSheet("accts");
   if(a==="export"){const blob=new Blob([JSON.stringify({app:"lifemax",v:1,saved:new Date().toISOString(),S,E},null,1)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="lifemax-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Backup saved");return}
@@ -801,7 +851,7 @@ Brain dump:
   if(a==="quick"){claimHabit(draft.habit,null,b);closeSheet();toast("Claimed");render();return}
   if(a==="undo"){const k=today(),l=(S.log[k]||[]).filter(x=>x!==id);S.log={...S.log};if(l.length)S.log[k]=l;else delete S.log[k];deleteEntry(k+"_"+id);save();closeSheet();toast("Removed");render();return}
   if(a==="round"){S.bossRounds=Math.min(((S.boss&&S.boss.rounds)||[0,0]).length-1,(S.bossRounds||0)+1);burst(b,"−20% HP");if(!done("study",today()))S.log={...S.log,[today()]:[...(S.log[today()]||[]),"study"]}}
-  if(a==="defeat"){const bq=(S.boss&&S.boss.quest)||"boss:main";S.quests={...S.quests,[bq]:true};S.qd={...(S.qd||{}),[bq]:today()};if(S.boss&&!S.boss.quest)S.boss={...S.boss,won:true};burst(b,"+100");toast("Boss defeated")}
+  if(a==="defeat"){const bq=(S.boss&&S.boss.quest)||"boss:main";S.quests={...S.quests,[bq]:true};if(bq.startsWith("boss:"))S.bossXP=(S.bossXP||0)+100;S.qd={...(S.qd||{}),[bq]:today()};if(S.boss&&!S.boss.quest)S.boss={...S.boss,won:true};burst(b,"+100");toast("Boss defeated")}
   if(a==="claim"){S.quests={...S.quests,[id]:true};S.qd={...(S.qd||{}),[id]:today()};const[p,q]=id.split(":");burst(b,"+"+P(p).quests.find(z=>z[0]===q)[2]);skip[p]=0}
   if(a==="unclaim"){S.quests={...S.quests};delete S.quests[id];if(S.qd){S.qd={...S.qd};delete S.qd[id]}toast("Moved back")}
   if(a==="skip")skip[id]=(skip[id]||0)+1;
@@ -810,7 +860,7 @@ Brain dump:
   if(["round","defeat","claim","unclaim","add"].includes(a)){save();levelCheck(before)}
   render();
 });
-document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value});
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value});
 document.addEventListener("change",async e=>{const i=e.target;
   if(i.id==="imp"&&i.files&&i.files[0]){try{const d=JSON.parse(await i.files[0].text());if(!d.S)throw 0;S=merge(d.S);E=d.E||{};save();for(const id in E)writeEntry(id);render(true);toast("Backup loaded")}catch(err){toast("That file isn't a Life Max backup")}i.value="";return}
   if(i.id==="p-photo"&&i.files&&i.files[0]&&draft){const file=i.files[0],d=draft;d.uploading=true;d.preview=URL.createObjectURL(file);renderSheet();
@@ -818,6 +868,7 @@ document.addEventListener("change",async e=>{const i=e.target;
     d.uploading=false;if(draft===d)renderSheet();return}
   const a=i.dataset&&i.dataset.act;if(!a)return;
   if(a==="vision"){S.vision=i.value.trim()||VISION_DEFAULT;save();return}
+  if(a==="wedit"){ensurePillars();const p=S.pillars.find(x=>x.id===i.dataset.id);if(p){p[i.dataset.f]=i.value.trim()||(i.dataset.f==="name"?"Untitled":"");save();render()}return}
   const v=parseFloat(String(i.value).replace(/[^0-9.]/g,""))||0,before=txp();
   if(a==="jset")S.goals={...S.goals,[i.dataset.id]:{...S.goals[i.dataset.id],[i.dataset.f]:v}};
   if(a==="aset")S.accts={...S.accts,[i.dataset.id]:v};
@@ -828,7 +879,7 @@ async function shrink(file){const url=URL.createObjectURL(file);try{const img=aw
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
 
 /* ======== storage ======== */
-function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
+function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
   Object.assign(o.accts,d.accts||{});for(const k in o.goals)Object.assign(o.goals[k],(d.goals||{})[k]||{});return o}
 function persistLocal(){try{localStorage.setItem("lifemax",JSON.stringify(S));localStorage.setItem("lifemax_entries",JSON.stringify(E))}catch(e){}}
 function save(){S.updatedAt=Date.now();persistLocal();sbQueue();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
