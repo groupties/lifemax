@@ -540,7 +540,8 @@ function postCard(e){const h=H(e.habit);if(!h)return"";const t=h.trait,c=t.c;let
 function vFeed(){
   const list=Object.values(E).sort((a,b)=>b.ts-a.ts).slice(0,60),bh=behind().slice(0,3);
   return `${header()}${ovrCard()}${friendStrip()}${storyRow()}
-  ${bh.length?`<div><div class="sec-h" style="margin-bottom:10px"><h2>Falling behind</h2><span class="eyebrow">vs Future You</span></div><div class="alerts">${bh.map(({h,gap})=>`
+  ${careCard()}
+  ${graceDay(today())?`<div class="card"><span class="eyebrow">Go easy today</span><h3>One small thing counts. Nothing you skip today will cost you.</h3></div>`:bh.length?`<div><div class="sec-h" style="margin-bottom:10px"><h2>Falling behind</h2><span class="eyebrow">vs Future You</span></div><div class="alerts">${bh.map(({h,gap})=>`
    <div class="alert ${gap!==null&&gap<5?"mid":""}"><span class="ic">${ico(h.id,h.trait.c)}</span><span class="tx"><b>${gap===null?h.name+": not started":h.name+": "+gap+" days"}</b><span>Future you does this ${h.freq}× a week</span></span><button class="lockbtn" data-act="proof" data-id="${h.id}">Lock in</button></div>`).join("")}</div></div>`
    :`<div class="card"><span class="eyebrow">On pace</span><h3>Nothing slipping. You're moving like Future You.</h3></div>`}
   <div style="display:flex;flex-direction:column;gap:14px"><div class="sec-h"><h2>Your feed</h2><span class="eyebrow">${Object.keys(E).length} proofs</span></div>
@@ -698,14 +699,14 @@ function rateQ(q){return q>=.85?"ext":q>=.6?"prod":q>=.35?"calm":q>=.12?"relax":
 // The climb: progress P runs 0-100% (OVR 60-99). A perfect day adds 0.45% (less as you climb), a good week ~1.8%, a perfect week ~3%. A day with nothing slips 0.2%.
 function series(){if(_ovr)return _ovr;const out={};let P=0;const t=dateOf(today());
   for(let d=dateOf(S.start||today());d<=t;d.setDate(d.getDate()+1)){const k=dkey(d),{q}=dayQ(k);let r,delta=0;
-    if(DY(k).rating==="rest"&&protectedDay(k))r="rest";else{r=rateQ(q);if(k===today()&&r==="not")r=null;if(r==="not")delta=-.2;else if(r)delta=.45*Math.pow(q,1.5)*(1.05-.25*P/100)}
+    if(DY(k).rating==="rest"&&protectedDay(k))r="rest";else{r=rateQ(q);if(k===today()&&r==="not")r=null;if(r==="not")delta=graceDay(k)?0:-.2;else if(r)delta=.45*Math.pow(q,1.5)*(1.05-.25*P/100)}
     P=Math.max(0,Math.min(100,P+delta));out[k]={P,delta,q,r}}return _ovr=out}
 function ratingOf(k){const x=series()[k];return x?x.r:null}
 // Recovery days protect streak and rating, up to 2 in any 7-day stretch.
 function protectedDay(k){const r=R(DY(k).rating);if(!r||!r.rec)return false;let n=0;const b=dateOf(k);for(let i=1;i<7;i++){const x=R(DY(kOf(b,i)).rating);if(x&&x.rec)n++}return n<2}
-function momentum(ids,base=new Date()){let a=0,e=0;for(let i=0;i<14;i++){const k=kOf(base,i);if(dayN(k)<0)break;if(protectedDay(k))continue;const w=Math.pow(.88,i);
+function momentum(ids,base=new Date()){let a=0,e=0;for(let i=0;i<14;i++){const k=kOf(base,i);if(dayN(k)<0)break;if(protectedDay(k))continue;if(graceDay(k)&&!(S.log[k]||[]).length&&i>0)continue;const w=Math.pow(.88,i);
   for(const id of ids){const h=H(id);if(!h)continue;const d=done(id,k);if(d)a+=w;if(i>0||d)e+=w*h.freq/7}}return e?Math.min(100,Math.round(a/e*100)):0}
-function streak(){let n=0;const b=new Date();for(let i=(S.log[today()]||[]).length?0:1;i<400;i++){const k=kOf(b,i);if(dayN(k)<0)break;if((S.log[k]||[]).length){n++;continue}if(protectedDay(k))continue;break}return n}
+function streak(){let n=0;const b=new Date();for(let i=(S.log[today()]||[]).length?0:1;i<400;i++){const k=kOf(b,i);if(dayN(k)<0)break;if((S.log[k]||[]).length){n++;continue}if(protectedDay(k)||graceDay(k))continue;break}return n}
 // Habit strength: each rep closes 7% of the gap to automatic; a missed day fades it slightly (Lally et al., 2010 style curve).
 function strengths(){if(_str)return _str;const out={},t=dateOf(today());for(const h of HABITS){let s=0;out[h.id]={};for(let d=dateOf(S.start||today());d<=t;d.setDate(d.getDate()+1)){const k=dkey(d);if(done(h.id,k))s+=.07*(1-s);else if(!protectedDay(k))s*=.995;out[h.id][k]=s}}return _str=out}
 const strAt=(id,k)=>{const m=strengths()[id];return m&&m[k]!=null?m[k]:0};
@@ -904,7 +905,7 @@ function sCheck(){const v=DY(today()).vibe;const SR=window.SpeechRecognition||wi
   <div class="field"><label for="ck-text">What you said</label><textarea id="ck-text" class="dump" data-ck="text" placeholder="Today I…">${esc(CK.text)}</textarea></div>
   ${CK.err?`<p style="margin:0;color:var(--hot);font-size:14px">${esc(CK.err)}</p>`:""}
   <button class="btn hot" data-act="vibe" ${CK.busy?"disabled":""}>${CK.busy?"Claude is listening back…":v?"Rate it again":"Rate my day"}</button>
-  ${v?vibeCard(v):""}`}
+  ${careCard()}${v?vibeCard(v):""}`}
 function micToggle(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;if(REC){try{REC.stop()}catch(e){}return}
   const r=new SR();r.continuous=true;r.interimResults=true;r.lang="en-US";const base=CK.text.trim()?CK.text.trim()+" ":"";let finals="";
   r.onresult=e=>{let interim="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finals+=t+" ";else interim+=t}CK.text=base+finals+interim;const ta=$("ck-text");if(ta)ta.value=CK.text};
@@ -914,12 +915,12 @@ function micToggle(){const SR=window.SpeechRecognition||window.webkitSpeechRecog
 async function rateVibe(){const t=CK.text.trim();if(t.length<15){CK.err="Say a bit more first. Even 2–3 sentences works.";return renderSheet()}
   if(REC){try{REC.stop()}catch(e){}}CK.busy=true;CK.err="";renderSheet();
   try{const j=aiJSON(await ai(`You are rating how someone's day FELT, based only on what they say below (a voice note transcript, so expect run-ons and filler). Don't judge productivity; judge their wellbeing, mood and how the day went for them. Be warm, honest and specific, second person ("you"), no therapy-speak, no diagnoses.
-Reply with only JSON: {"score": integer 1-10, "label": one of "Amazing","Great","Good","Okay","Rough","Hard", "mood": "one or two words", "energy": integer 1-10, "summary": "2 sentences reflecting their day back to them", "wins": ["up to 3 good things they mentioned"], "stressors": ["up to 3 things weighing on them, if any"], "takeaway": "one honest observation", "tomorrow": "one small, concrete thing to try tomorrow"}
+Reply with only JSON: {"score": integer 1-10, "label": one of "Amazing","Great","Good","Okay","Rough","Hard", "mood": "one or two words", "energy": integer 1-10, "summary": "2 sentences reflecting their day back to them", "wins": ["up to 3 good things they mentioned"], "stressors": ["up to 3 things weighing on them, if any"], "takeaway": "one honest observation", "tomorrow": "one small, concrete thing to try tomorrow", "struggling": 0, 1 or 2 (0 = doing okay; 1 = having a hard time emotionally, like stressed, down, lonely or overwhelmed; 2 = really struggling, like hopeless, numb, in a lot of pain or barely getting through), "crisis": true only if they mention wanting to hurt themselves, not wanting to be alive, or being in danger, otherwise false}
 Transcript:
 """${t.slice(0,8000)}"""`));
     const v={score:Math.max(1,Math.min(10,Math.round(+j.score||5))),label:String(j.label||"Okay"),mood:String(j.mood||""),energy:Math.max(1,Math.min(10,Math.round(+j.energy||5))),summary:String(j.summary||""),
-      wins:(j.wins||[]).slice(0,3).map(String),stressors:(j.stressors||[]).slice(0,3).map(String),takeaway:String(j.takeaway||""),tomorrow:String(j.tomorrow||""),text:t,at:Date.now()};
-    setDay(today(),{vibe:v});save();render();toast("Check-in saved")}catch(e){CK.err=aiErr(e)}
+      wins:(j.wins||[]).slice(0,3).map(String),stressors:(j.stressors||[]).slice(0,3).map(String),takeaway:String(j.takeaway||""),tomorrow:String(j.tomorrow||""),text:t,at:Date.now(),struggling:Math.max(0,Math.min(2,Math.round(+j.struggling||0))),crisis:j.crisis===true};
+    setDay(today(),{vibe:v});noteCare(v.struggling,v.crisis);save();render();toast("Check-in saved")}catch(e){CK.err=aiErr(e)}
   CK.busy=false;if(sheet&&sheet.t==="check")renderSheet()}
 
 /* ---- shareable card image ---- */
@@ -964,6 +965,16 @@ function sName(id){const f=id?FR.find(x=>x.id===id):null;const real=f&&f.card&&f
   <div class="field"><label for="nm-input">${f?"Nickname":"Name"}</label><input id="nm-input" maxlength="20" data-nm="v" value="${esc(NM.v)}" placeholder="${f?"e.g. Babe":"Your first name"}"></div>
   <div class="row"><button class="btn hot" data-act="savename" data-id="${id||""}">Save</button>${f&&(S.nick||{})[id]?`<button class="btn soft" data-act="clearnick" data-id="${id}">Use their real name</button>`:""}</div>`}
 async function pushCardNow(){if(SB&&UID&&MYCODE){clearTimeout(cardT);await SB.from("lifemax_profiles").update({card:cardData(),updated_at:new Date().toISOString()}).eq("user_id",UID)}}
+
+/* ---- gentle days: when a check-in or journal entry shows you're having a hard time,
+   that day and the next don't cost you anything for logging less. ---- */
+function noteCare(level,crisis){if(!level&&!crisis)return;const k=today(),d=DY(k);setDay(k,{care:Math.max(d.care||0,level||0,crisis?2:0),crisis:!!(d.crisis||crisis)})}
+function graceDay(k){if((DY(k).care||0)>0)return true;const y=dateOf(k);y.setDate(y.getDate()-1);return (DY(dkey(y)).care||0)>0}
+function careCard(){const d=DY(today());if(!d.crisis)return"";
+  return `<div class="card" style="gap:10px;border-left:4px solid var(--lilac)"><span class="eyebrow">You don't have to carry this alone</span>
+  <p style="margin:0;font-size:15px;line-height:1.5">If you're thinking about hurting yourself, talk to someone right now. It's free, private, and open 24/7.</p>
+  <div class="row"><a class="btn solid" href="tel:988" style="text-decoration:none">Call 988</a><a class="btn soft" href="sms:988" style="text-decoration:none;color:var(--ink)">Text 988</a></div>
+  <p class="muted" style="margin:0;font-size:13px">988 Suicide & Crisis Lifeline (US). You can also text HOME to 741741. If you're in danger right now, call 911.</p></div>`}
 /* ======== render ======== */
 function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
@@ -1067,13 +1078,14 @@ document.addEventListener("click",async e=>{
   if(a==="structure"){if(!draft.dump.trim()){draft.err="Write something first, even a messy paragraph.";return renderSheet()}
     draft.busy=true;draft.err="";renderSheet();
     try{const j=await SAMPLE.json(`You turn messy brain dumps into a clean journal entry for ${S.name||"the user"}, who is working toward this vision: ${S.vision||VISION_DEFAULT} Write in second person ("you"), warm but direct, no therapy-speak.
-Reply with only JSON: {"title": "4-7 word title", "mood": "one word", "summary": "2-3 sentences capturing what's on his mind", "themes": ["up to 4 short themes"], "wins": ["things he did or is proud of, if any"], "todos": ["concrete actions he mentioned or implied, max 5"], "oneThing": "the single most important next action"}
+Reply with only JSON: {"title": "4-7 word title", "mood": "one word", "summary": "2-3 sentences capturing what's on his mind", "themes": ["up to 4 short themes"], "wins": ["things he did or is proud of, if any"], "todos": ["concrete actions he mentioned or implied, max 5"], "oneThing": "the single most important next action", "struggling": 0, 1 or 2 (0 = doing okay; 1 = having a hard time emotionally, like stressed, down, lonely or overwhelmed; 2 = really struggling, like hopeless, numb, in a lot of pain or barely getting through), "crisis": true only if they mention wanting to hurt themselves, not wanting to be alive, or being in danger, otherwise false}
 Brain dump:
 """${draft.dump.slice(0,12000)}"""`,{modelTier:"default"});
-      if(j&&j.title)draft.journal={title:String(j.title),mood:String(j.mood||""),summary:String(j.summary||""),themes:(j.themes||[]).slice(0,4).map(String),wins:(j.wins||[]).slice(0,6).map(String),todos:(j.todos||[]).slice(0,6).map(String),oneThing:String(j.oneThing||"")};
+      if(j&&j.title)draft.journal={title:String(j.title),mood:String(j.mood||""),summary:String(j.summary||""),themes:(j.themes||[]).slice(0,4).map(String),wins:(j.wins||[]).slice(0,6).map(String),todos:(j.todos||[]).slice(0,6).map(String),oneThing:String(j.oneThing||""),struggling:Math.max(0,Math.min(2,Math.round(+j.struggling||0))),crisis:j.crisis===true};
       else draft.err="Claude's answer came back empty. Post it as-is or try again.";
     }catch(err){draft.err=err.code==="not_granted"?"Claude wasn't allowed this time. Your dump still posts as-is.":err.code==="rate_limited"?"Too many requests. Wait a minute and try again.":"Couldn't reach Claude. Your dump still posts as-is."}
     draft.busy=false;if(sheet&&sheet.t==="proof")renderSheet();return}
+  if(a==="postproof"&&draft&&draft.journal&&draft.journal.struggling)noteCare(draft.journal.struggling,draft.journal.crisis);
   if(a==="postproof"){const d=draft,entry={note:d.note.trim(),num:d.num?String(d.num).trim():"",num2:d.num2?String(d.num2).trim():"",title:d.title.trim(),rating:d.rating||0,dump:d.dump.trim(),journal:d.journal||null,photo:d.photo||""};
     for(const k in entry)if(!entry[k])delete entry[k];
     claimHabit(d.habit,entry,b);closeSheet();toast(hasProof(entry)?"Posted · proof bonus":"Claimed");render();return}
