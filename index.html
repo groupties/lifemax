@@ -365,6 +365,10 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:800;letter-spacing:-.01
 <div class="lvup" id="lvup" data-act="lvclose"><span class="eyebrow" style="color:inherit">Level up</span><b id="lvupN">2</b><p id="lvupT">Tap to keep going</p></div>
 
 <script>
+const SB_URL="https://ynegjdbixowkolsvhuol.supabase.co", SB_KEY="sb_publishable_5dkw2N5GiTGh-o3T1OhjwA_lNFUkRa1";
+let SB=null, UID=null, EMAIL="", SI={email:"",pass:"",err:"",busy:false}, sbTimer=null, sbBusy=false, sbAgain=false;
+const PH={}, PHQ=new Set(); let phT=null;
+const BLANK="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 /* ======== data ======== */
 const ICON={study:'<path d="M4 6a2 2 0 0 1 2-2h12v16H6a2 2 0 0 1-2-2z"/><path d="M8 4v16"/>',
  workout:'<path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12"/>',
@@ -487,7 +491,7 @@ function postCard(e){const h=H(e.habit);if(!h)return"";const t=h.trait,c=t.c;let
   const xp=h.xp+(hasProof(e)?Math.round(h.xp*.5):0);
   return `<button class="post" data-act="entry" data-id="${esc(e._id)}" style="--c:${c}">
    <div class="ph"><span class="av">${ico(h.id)}</span><span class="who"><b>You ${h.verb}</b><br><span class="muted">${ago(e.ts)} · ${t.name}</span></span><span class="xp">+${xp}</span></div>
-   ${e.photo?`<img src="/_blob/${esc(e.photo)}" alt="" loading="lazy">`:""}
+   ${e.photo?`<img src="${photoSrc(e.photo)}" alt="" loading="lazy">`:""}
    ${body?`<div class="pb" ${e.photo?'style="padding-top:14px"':""}>${body}</div>`:""}</button>`}
 function vFeed(){
   const list=Object.values(E).sort((a,b)=>b.ts-a.ts).slice(0,60),bh=behind().slice(0,3);
@@ -549,7 +553,7 @@ function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.
    <button class="total" data-act="accts"><span class="muted" style="font-size:13px">Across your accounts · edit</span><b class="num">${money(tot)}</b></button>
    <div class="jars">${GOALS.map(g0=>{const g=GL(g0),G=S.goals[g.k],v=+G[g.f]||0,p=Math.min(100,Math.round(v/(+G.target||1)*100));return `<button class="jar" data-act="jar" data-id="${g.k}"><span class="gl"><span class="fl" style="--c:${g.c};height:${p}%"></span><span class="pc num">${p}%</span></span><small>${g.name}<br>${money(v)}</small></button>`}).join("")}</div>
    <p class="muted" style="margin:0;font-size:13px">${esc(S.vaultNote||"Fill the jars from left to right.")}</p></div>
-  <div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Backup</h2><span class="eyebrow">your data, your file</span></div><div class="row"><button class="btn soft" data-act="export">Export backup</button><label class="btn soft" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" id="imp" hidden></label></div></div>
+  <div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Sync & backup</h2><span class="eyebrow">your data, your file</span></div>${SB?(UID?`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px;min-width:0;overflow-wrap:anywhere">Syncing as ${esc(EMAIL)}</span><button class="btn soft" data-act="signout">Sign out</button></div>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<div class="row"><button class="btn soft" data-act="export">Export backup</button><label class="btn soft" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" id="imp" hidden></label></div></div>
   <div style="display:flex;flex-direction:column;gap:4px"><div class="sec-h" style="margin-bottom:6px"><h2>Diary</h2><span class="eyebrow">${j.length} entries</span></div>
    ${j.length?`<div class="diary">${j.map(e=>{const d=new Date(e.ts);return `<button class="dline" data-act="entry" data-id="${esc(e._id)}"><span class="dt">${d.toLocaleDateString(undefined,{month:"short"}).toUpperCase()}<b>${d.getDate()}</b></span><span class="dx"><b>${esc(e.journal?.title||"Journal entry")}</b><p>${esc(e.journal?.summary||e.dump||"")}</p></span></button>`}).join("")}</div>`
    :`<div class="empty"><h3>No entries yet.</h3><p class="muted" style="margin:0">Brain-dump anything. Claude can shape it into a clean entry.</p><button class="btn hot" data-act="proof" data-id="journal">Write today's entry</button></div>`}</div>`}
@@ -579,7 +583,7 @@ function sProof(){const h=H(draft.habit),k=draft.kind;let f="";
   <div class="row"><button class="btn hot" data-act="postproof" ${draft.uploading||draft.busy?"disabled":""}>${ex?"Update post":"Post proof"}</button>${ex?`<button class="btn soft" data-act="undo" data-id="${h.id}">Remove</button>`:`<button class="btn soft" data-act="quick">Quick claim</button>`}</div>`}
 function sEntry(id){const e=E[id];if(!e)return `<div class="shh"><h2>Post removed</h2>${X}</div>`;const h=H(e.habit),J=e.journal;
   return `<div class="shh"><div><span class="eyebrow">${new Date(e.ts).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span><h2>${esc(J?.title||e.title||h.name)}</h2></div>${X}</div>
-  ${e.photo?`<img src="/_blob/${esc(e.photo)}" alt="" style="width:100%;border-radius:18px">`:""}
+  ${e.photo?`<img src="${photoSrc(e.photo)}" alt="" style="width:100%;border-radius:18px">`:""}
   ${J?`<div class="jout"><span class="lbl">${esc(J.mood||"")}</span><div>${esc(J.summary)}</div>${J.themes?.length?`<div class="tags">${J.themes.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</div>`:""}
    ${J.wins?.length?`<div><span class="lbl">Wins</span><ul>${J.wins.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}${J.todos?.length?`<div><span class="lbl">To do</span><ul>${J.todos.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}${J.oneThing?`<div class="one">Next move: ${esc(J.oneThing)}</div>`:""}</div>`:""}
   ${e.dump?`<div class="field"><label>Original brain dump</label><div class="note" style="white-space:pre-wrap;font-size:14px;color:var(--muted)">${esc(e.dump)}</div></div>`:""}
@@ -736,12 +740,12 @@ function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();
    v.innerHTML=t==="feed"?vFeed():t==="today"?vToday():t==="vision"?vVision():vMe();if(anim){v.classList.remove("enter");void v.offsetWidth;v.classList.add("enter")}}}
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
-function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-)/.test(f))return;
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
 function closeSheet(){sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
 function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};
-  draft={habit:id,kind:h.kind,note:ex.note||"",num:ex.num||"",num2:ex.num2||"",title:ex.title||"",rating:ex.rating||0,dump:ex.dump||"",journal:ex.journal||null,photo:ex.photo||"",preview:ex.photo?"/_blob/"+ex.photo:"",busy:false,uploading:false,err:""};
+  draft={habit:id,kind:h.kind,note:ex.note||"",num:ex.num||"",num2:ex.num2||"",title:ex.title||"",rating:ex.rating||0,dump:ex.dump||"",journal:ex.journal||null,photo:ex.photo||"",preview:ex.photo?photoSrc(ex.photo):"",busy:false,uploading:false,err:""};
   openSheet("proof",id)}
 
 /* ======== actions ======== */
@@ -763,6 +767,11 @@ document.addEventListener("click",async e=>{
   if(a==="jar")return openSheet("jar",id);
   if(a==="accts")return openSheet("accts");
   if(a==="export"){const blob=new Blob([JSON.stringify({app:"lifemax",v:1,saved:new Date().toISOString(),S,E},null,1)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="lifemax-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Backup saved");return}
+  if(a==="opensignin"){SI.err="";return openSheet("signin")}
+  if(a==="signin"){const em=SI.email.trim(),pw=SI.pass;if(!SB){SI.err="Sync isn't available offline. Try again with internet.";return renderSheet()}if(!em||!pw){SI.err="Enter your email and password.";return renderSheet()}
+    SI.busy=true;SI.err="";renderSheet();const{error}=await SB.auth.signInWithPassword({email:em,password:pw});SI.busy=false;
+    if(error){SI.err=/invalid/i.test(error.message)?"Wrong email or password.":error.message;return renderSheet()}SI.pass="";closeSheet();toast("Signed in · syncing");return}
+  if(a==="signout"){if(SB)await SB.auth.signOut();toast("Signed out. Progress stays on this phone.");render();return}
   if(a==="ovr")return openSheet("ovr");
   if(a==="day")return openSheet("day",b.dataset.k);
   if(a==="custom"){cdraft={name:"",trait:"healthy",freq:3,del:null};return openSheet("custom")}
@@ -801,11 +810,11 @@ Brain dump:
   if(["round","defeat","claim","unclaim","add"].includes(a)){save();levelCheck(before)}
   render();
 });
-document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value});
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value});
 document.addEventListener("change",async e=>{const i=e.target;
   if(i.id==="imp"&&i.files&&i.files[0]){try{const d=JSON.parse(await i.files[0].text());if(!d.S)throw 0;S=merge(d.S);E=d.E||{};save();for(const id in E)writeEntry(id);render(true);toast("Backup loaded")}catch(err){toast("That file isn't a Life Max backup")}i.value="";return}
   if(i.id==="p-photo"&&i.files&&i.files[0]&&draft){const file=i.files[0],d=draft;d.uploading=true;d.preview=URL.createObjectURL(file);renderSheet();
-    try{const blob=await shrink(file);const r=await ASSETS.upload(blob);d.photo=r.id;d.preview="/_blob/"+r.id}catch(err){d.err="Photo didn't upload. Try a smaller one.";d.preview="";d.photo=""}
+    try{const blob=await shrink(file);const r=await ASSETS.upload(blob);d.photo=r.id}catch(err){d.err="Photo didn't upload. Try a smaller one.";d.preview="";d.photo=""}
     d.uploading=false;if(draft===d)renderSheet();return}
   const a=i.dataset&&i.dataset.act;if(!a)return;
   if(a==="vision"){S.vision=i.value.trim()||VISION_DEFAULT;save();return}
@@ -819,13 +828,13 @@ async function shrink(file){const url=URL.createObjectURL(file);try{const img=aw
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
 
 /* ======== storage ======== */
-function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
+function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
   Object.assign(o.accts,d.accts||{});for(const k in o.goals)Object.assign(o.goals[k],(d.goals||{})[k]||{});return o}
 function persistLocal(){try{localStorage.setItem("lifemax",JSON.stringify(S));localStorage.setItem("lifemax_entries",JSON.stringify(E))}catch(e){}}
-function save(){persistLocal();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
+function save(){S.updatedAt=Date.now();persistLocal();sbQueue();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
 async function flush(){if(saving){pending=true;return}saving=true;try{await stateRef.set(JSON.parse(JSON.stringify(S)));setStatus("Synced to your account")}catch(e){setStatus("Saved on this device. Sync failed.")}saving=false;if(pending){pending=false;flush()}}
-async function writeEntry(id){persistLocal();if(!entriesCol)return;const{_id,...body}=E[id];try{await entriesCol.doc(id).set(body)}catch(e){setStatus("Post saved on this device. Sync failed.")}}
-async function deleteEntry(id){delete E[id];persistLocal();if(!entriesCol)return;try{await entriesCol.doc(id).delete()}catch(e){}}
+async function writeEntry(id){persistLocal();sbEntry(id);if(!entriesCol)return;const{_id,...body}=E[id];try{await entriesCol.doc(id).set(body)}catch(e){setStatus("Post saved on this device. Sync failed.")}}
+async function deleteEntry(id){delete E[id];persistLocal();sbDelete(id);if(!entriesCol)return;try{await entriesCol.doc(id).delete()}catch(e){}}
 const setStatus=t=>$("status").textContent=t;
 
 try{const l=localStorage.getItem("lifemax");if(l)S=merge(JSON.parse(l));const le=localStorage.getItem("lifemax_entries");if(le)E=JSON.parse(le)||{}}catch(e){}
@@ -840,6 +849,44 @@ render(true);setStatus("Saved on this device");
     if(s.exists){S=merge(s.data());if(!S.start){S.start=today();save()}persistLocal();render();setStatus("Synced to your account")}},()=>{clearTimeout(timer);setStatus("Sync stopped. Progress stays on this device.")});
   entriesCol.orderBy("ts","desc").limit(400).onSnapshot(q=>{if(q.metadata.hasPendingWrites)return;const n={};q.docs.forEach(d=>{n[d.id]={...d.data(),_id:d.id}});
     if(!q.metadata.fromCache||q.size){E=n;persistLocal();render()}},()=>{});
+})();
+
+/* ======== Supabase sync ======== */
+function sSignin(){return `<div class="shh"><div><span class="eyebrow">Sync</span><h2>Sign in</h2><p>Use the login you made in Supabase. You only do this once on this phone.</p></div>${X}</div>
+  <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="username" autocapitalize="off" data-s="email" value="${esc(SI.email)}"></div>
+  <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password" data-s="pass"></div>
+  ${SI.err?`<p style="margin:0;color:var(--hot);font-size:14px">${esc(SI.err)}</p>`:""}
+  <div class="row"><button class="btn hot" data-act="signin" ${SI.busy?"disabled":""}>${SI.busy?"Signing in…":"Sign in"}</button><button class="btn soft" data-act="close">Later</button></div>`}
+function photoSrc(p){if(!p)return"";if(p.startsWith("blob:")||p.startsWith("data:"))return p;if(PH[p])return PH[p];
+  if(SB&&UID&&!PHQ.has(p)){PHQ.add(p);clearTimeout(phT);phT=setTimeout(fetchPhotos,60)}return BLANK}
+async function fetchPhotos(){const paths=[...PHQ].filter(p=>!PH[p]);if(!paths.length)return;try{const{data}=await SB.storage.from("proof").createSignedUrls(paths,604800);(data||[]).forEach(x=>{if(x.signedUrl)PH[x.path]=x.signedUrl});render()}catch(e){}}
+function setSession(s){UID=s&&s.user?s.user.id:null;EMAIL=s&&s.user?s.user.email:"";
+  ASSETS=UID?{upload:async blob=>{const p=UID+"/"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)+".jpg";const{error}=await SB.storage.from("proof").upload(p,blob,{contentType:"image/jpeg"});if(error)throw error;return{id:p}}}:null}
+function sbQueue(){if(!SB||!UID)return;clearTimeout(sbTimer);sbTimer=setTimeout(sbPushState,800)}
+async function sbPushState(){if(!SB||!UID)return;if(sbBusy){sbAgain=true;return}sbBusy=true;
+  const{error}=await SB.from("lifemax_state").upsert({user_id:UID,state:JSON.parse(JSON.stringify(S)),updated_at:new Date().toISOString()});
+  setStatus(error?"Saved on this phone. Sync will retry.":"Synced · "+EMAIL);sbBusy=false;if(sbAgain){sbAgain=false;sbPushState()}}
+async function sbEntry(id){if(!SB||!UID||!E[id])return;const{_id,...b}=E[id];const{error}=await SB.from("lifemax_entries").upsert({user_id:UID,id,body:b,ts:b.ts||Date.now()});if(error)setStatus("Post saved on this phone. Sync will retry.")}
+async function sbDelete(id){if(!SB||!UID)return;await SB.from("lifemax_entries").delete().eq("user_id",UID).eq("id",id)}
+async function sbPull(){if(!SB||!UID)return;setStatus("Syncing…");
+  const{data:row,error}=await SB.from("lifemax_state").select("state,updated_at").eq("user_id",UID).maybeSingle();
+  if(error){setStatus("Couldn't sync. Saved on this phone.");return}
+  const local=S.updatedAt||0,remote=row?(row.state.updatedAt||Date.parse(row.updated_at)||1):0;
+  if(row&&remote>local){S=merge(row.state);persistLocal()}else if(!row||local>remote)await sbPushState();
+  const{data:rows}=await SB.from("lifemax_entries").select("id,body,ts").eq("user_id",UID);
+  const rem={};(rows||[]).forEach(r=>{rem[r.id]={...r.body,_id:r.id}});
+  const loc=E,mine=Object.keys(loc).filter(id=>!rem[id]||(loc[id].ts||0)>(rem[id].ts||0));
+  E={...rem};for(const id of mine)E[id]=loc[id];persistLocal();
+  if(mine.length)await SB.from("lifemax_entries").upsert(mine.map(id=>{const{_id,...b}=E[id];return{user_id:UID,id,body:b,ts:b.ts||Date.now()}}));
+  render();setStatus("Synced · "+EMAIL)}
+function loadSb(){return new Promise(res=>{const urls=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js","https://unpkg.com/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"];let i=0;
+  const go=()=>{if(window.supabase||i>=urls.length)return res();const sc=document.createElement("script");sc.src=urls[i++];sc.onload=()=>res();sc.onerror=go;document.head.appendChild(sc)};go()})}
+(async()=>{if(!SB_URL.startsWith("https://"))return;await loadSb();if(!window.supabase||!window.supabase.createClient){setStatus("Saved on this phone. Sync loads when you're online.");return}
+  SB=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  const{data}=await SB.auth.getSession();setSession(data.session);
+  SB.auth.onAuthStateChange((ev,s)=>{const was=UID;setSession(s);if(UID&&UID!==was)sbPull();if(!UID&&was)render()});
+  if(UID)sbPull();else{setStatus("Saved on this phone. Sign in on the Me tab to sync.");render();let seen=null;try{seen=localStorage.getItem("lifemax_si");localStorage.setItem("lifemax_si","1")}catch(e){}if(!seen&&!sheet)openSheet("signin")}
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&UID)sbPull()});
 })();
 </script>
 
