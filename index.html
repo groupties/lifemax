@@ -445,7 +445,7 @@ const dkey=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const today=()=>dkey(new Date());
 const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return dkey(d)};
 const money=n=>"$"+Math.round(+n||0).toLocaleString();
-const H=id=>HABITS.find(h=>h.id===id), P=id=>PILLARS.find(p=>p.id===id), T=id=>TRAITS.find(t=>t.id===id);
+const H=id=>HABITS.find(h=>h.id===id)||CORE.find(h=>h.id===id), P=id=>PILLARS.find(p=>p.id===id), T=id=>TRAITS.find(t=>t.id===id);
 const done=(id,k)=>(S.log[k]||[]).includes(id);
 const ico=(id,c)=>`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${c?`stroke="${c}"`:""}>${ICON[id]||ICON._custom}</svg>`;
 const X='<button class="x" data-act="close" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
@@ -511,7 +511,7 @@ function postCard(e){const h=H(e.habit);if(!h)return"";const t=h.trait,c=t.c;let
    ${body?`<div class="pb" ${e.photo?'style="padding-top:14px"':""}>${body}</div>`:""}</button>`}
 function vFeed(){
   const list=Object.values(E).sort((a,b)=>b.ts-a.ts).slice(0,60),bh=behind().slice(0,3);
-  return `${header()}${ovrCard()}${storyRow()}
+  return `${header()}${ovrCard()}${friendStrip()}${storyRow()}
   ${bh.length?`<div><div class="sec-h" style="margin-bottom:10px"><h2>Falling behind</h2><span class="eyebrow">vs Future You</span></div><div class="alerts">${bh.map(({h,gap})=>`
    <div class="alert ${gap!==null&&gap<5?"mid":""}"><span class="ic">${ico(h.id,h.trait.c)}</span><span class="tx"><b>${gap===null?h.name+": not started":h.name+": "+gap+" days"}</b><span>Future you does this ${h.freq}× a week</span></span><button class="lockbtn" data-act="proof" data-id="${h.id}">Lock in</button></div>`).join("")}</div></div>`
    :`<div class="card"><span class="eyebrow">On pace</span><h3>Nothing slipping. You're moving like Future You.</h3></div>`}
@@ -532,7 +532,7 @@ function vToday(){
   ${board()}<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Lock in</h2><span class="eyebrow">tap to post proof</span></div>
   <div class="grid">${HABITS.map(h=>{const on=tl.includes(h.id);return `<button class="tile ${on?"on":""}" style="--c:${h.trait.c}" data-act="${on?"entryToday":"proof"}" data-id="${h.id}">
    <span class="chk">${on?"✓":""}</span>
-   <svg viewBox="0 0 24 24">${ICON[h.id]||ICON._custom}</svg><span><span class="tn">${h.name}</span><br><span class="tx">+${h.xp} · +${Math.round(h.xp*.5)} proof</span></span></button>`}).join("")}<button class="tile add" data-act="custom"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="tn">New category</span></button></div></div>
+   <svg viewBox="0 0 24 24">${ICON[h.id]||ICON._custom}</svg><span><span class="tn">${h.name}</span><br><span class="tx">+${h.xp} · +${Math.round(h.xp*.5)} proof</span></span></button>`}).join("")}<button class="tile add" data-act="custom"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="tn">Your habits</span></button></div></div>
   <div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Today so far</h2><span class="eyebrow">decided by what you log</span></div>${rateRow(today())}</div>
   ${mq?`<button class="mainq" data-act="world" data-id="career"><span class="eyebrow">Main quest</span><h3>${esc(mq[1])}</h3><span class="go">+${mq[2]} XP · open Career</span></button>`:""}
   ${countsRow()}`}
@@ -570,7 +570,7 @@ function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.
    <button class="total" data-act="accts"><span class="muted" style="font-size:13px">Across your accounts · edit</span><b class="num">${money(tot)}</b></button>
    <div class="jars">${GOALS.map(g0=>{const g=GL(g0),G=S.goals[g.k],v=+G[g.f]||0,p=Math.min(100,Math.round(v/(+G.target||1)*100));return `<button class="jar" data-act="jar" data-id="${g.k}"><span class="gl"><span class="fl" style="--c:${g.c};height:${p}%"></span><span class="pc num">${p}%</span></span><small>${g.name}<br>${money(v)}</small></button>`}).join("")}</div>
    <p class="muted" style="margin:0;font-size:13px">${esc(S.vaultNote||"Fill the jars from left to right.")}</p></div>
-  <div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Sync & backup</h2><span class="eyebrow">your data, your file</span></div>${SB?(UID?`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px;min-width:0;overflow-wrap:anywhere">Syncing as ${esc(EMAIL)}</span><button class="btn soft" data-act="signout">Sign out</button></div>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<div class="row"><button class="btn soft" data-act="export">Export backup</button><label class="btn soft" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" id="imp" hidden></label></div></div>
+  ${friendsMgr()}<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Sync & backup</h2><span class="eyebrow">your data, your file</span></div>${SB?(UID?`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px;min-width:0;overflow-wrap:anywhere">Syncing as ${esc(EMAIL)}</span><button class="btn soft" data-act="signout">Sign out</button></div>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<div class="row"><button class="btn soft" data-act="export">Export backup</button><label class="btn soft" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" id="imp" hidden></label></div></div>
   ${shelf()}
   <div style="display:flex;flex-direction:column;gap:4px"><div class="sec-h" style="margin-bottom:6px"><h2>Diary</h2><span class="eyebrow">${j.length} entries</span></div>
    ${j.length?`<div class="diary">${j.map(e=>{const d=new Date(e.ts);return `<button class="dline" data-act="entry" data-id="${esc(e._id)}"><span class="dt">${d.toLocaleDateString(undefined,{month:"short"}).toUpperCase()}<b>${d.getDate()}</b></span><span class="dx"><b>${esc(e.journal?.title||"Journal entry")}</b><p>${esc(e.journal?.summary||e.dump||"")}</p></span></button>`}).join("")}</div>`
@@ -640,7 +640,8 @@ const CHAL=[
  ["c_dm","Send 1 cold DM to someone in fashion or PR","driven",20],["c_apply3","Apply to 3 remote roles","driven",30],["c_agency","Research one PR agency or brand to intern at","driven",15],["c_avoid","Do the one task you've been avoiding","driven",30],["c_plan","Plan tomorrow before bed","driven",10],
  ["c_zero","Spend $0 on wants today","wealthy",20],["c_sell","List one item to sell","wealthy",15],["c_check","Check every account and update the Vault","wealthy",10],["c_save","Move $10 or more into a jar","wealthy",15],
  ["c_phone","No phone for the first 30 minutes awake","grounded",20],["c_grat","Write 3 things you're grateful for","grounded",10],["c_breathe","5 minutes of slow breathing","grounded",10],["c_outside","20 minutes outside, no headphones","grounded",15],["c_call","Call or see someone you care about","grounded",15]];
-const CH=id=>CHAL.find(c=>c[0]===id);
+const allChal=()=>CHAL.concat(S.myChal||[]);
+const CH=id=>allChal().find(c=>c[0]===id);
 const BRAIN=[
  {id:"hippo",name:"Memory & Learning",region:"Hippocampus",c:"var(--sky)",habits:["workout","run","study","lang","read"],note:"Aerobic exercise has been linked to a larger hippocampus in adults, and learning a new language is linked to growth there too."},
  {id:"pfc",name:"Focus & Self-control",region:"Prefrontal cortex",c:"var(--amber)",habits:["study","nospend","apply"],chal:1,note:"Choosing focus over the easy option, again and again, is how the brain's planning and impulse-control network gets practice."},
@@ -653,7 +654,7 @@ const dateOf=k=>{const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)}
 const dayN=k=>Math.round((dateOf(k)-dateOf(S.start||today()))/864e5);
 const DY=k=>S.days[k]||{};
 const TH=t=>HABITS.filter(h=>h.trait.id===t.id).map(h=>h.id);
-function rebuild(){PILLARS=(S.pillars&&S.pillars.length)?S.pillars:DEFAULT_PILLARS;HABITS=CORE.concat((S.custom||[]).map(c=>({id:c.id,name:c.name,xp:c.xp||15,freq:c.freq||3,kind:"note",note:"Proof (optional)",verb:"locked in: "+c.name,trait:T(c.trait)||TRAITS[0],custom:true})))}
+function rebuild(){PILLARS=(S.pillars&&S.pillars.length)?S.pillars:DEFAULT_PILLARS;const hc=S.habitCfg||{};HABITS=CORE.filter(h=>!(hc[h.id]&&hc[h.id].hide)).map(h=>hc[h.id]&&hc[h.id].freq?{...h,freq:hc[h.id].freq}:h).concat((S.custom||[]).map(c=>({id:c.id,name:c.name,xp:c.xp||15,freq:c.freq||3,kind:"note",note:"Proof (optional)",verb:"locked in: "+c.name,trait:T(c.trait)||TRAITS[0],custom:true})))}
 function sweepOn(k){const d=DY(k),p=d.picks||[];return p.length>=3&&p.every(x=>(d.done||[]).includes(x))}
 function paceOn(k){const exp=HABITS.reduce((a,h)=>a+h.freq/7,0);return Math.min(100,Math.round((S.log[k]||[]).length/exp*100))}
 // Day quality (0-1) comes only from what you logged. You never pick the label, except Rest.
@@ -685,9 +686,10 @@ function brainScore(b){const ids=b.all?CORE.map(h=>h.id):b.habits,k=today();cons
 function topBrain(){let best=null;for(const b of BRAIN){const x=brainScore(b),v=x.g*2+x.r+x.s/10;if(!best||v>best.v)best={b,x,v}}return best}
 function rng(seed){let x=seed%2147483647;if(x<=0)x+=2147483646;return()=>(x=x*16807%2147483647)/2147483647}
 function offerFor(k){const d=DY(k);if(d.offer)return d.offer;const r=rng(+k.replace(/-/g,"")),y=dateOf(k);y.setDate(y.getDate()-1);
-  const pool=CHAL.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  const pool=allChal();for(let i=pool.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
   const weak=TRAITS.map(t=>({id:t.id,m:momentum(TH(t),y)})).sort((a,b)=>a.m-b.m).slice(0,3).map(x=>x.id),out=[];
-  for(const w of weak){const c=pool.find(c=>c[2]===w&&!out.includes(c[0]));if(c)out.push(c[0])}
+  const mine=pool.filter(c=>c[0].startsWith("m"));if(mine.length)out.push(mine[0][0]);
+  for(const w of weak){if(out.length>=3)break;const c=pool.find(c=>c[2]===w&&!out.includes(c[0]));if(c)out.push(c[0])}
   for(const c of pool){if(out.length>=6)break;if(!out.includes(c[0])&&!out.map(id=>CH(id)[2]).filter(t=>t===c[2]).length)out.push(c[0])}
   for(const c of pool){if(out.length>=6)break;if(!out.includes(c[0]))out.push(c[0])}return out}
 function chalXP(){let x=0;for(const k in S.days){for(const id of(S.days[k].done||[]))x+=(CH(id)||[0,0,0,0])[3];if(sweepOn(k))x+=50}return x}
@@ -704,8 +706,8 @@ function ovrCard(){const o=ovrOn(today()),wk=wkGain(),tb=topBrain(),pt=(o-Math.f
    <span class="nextpt"><span class="bar"><i style="width:${o>=99?100:pt}%"></i></span><small class="num">${o>=99?"Maxed":Math.round(pt)+"% to "+(Math.floor(o)+1)}</small></span></button>`}
 function board(){const k=today(),d=DY(k),picks=d.picks||[],dn=d.done||[],offer=offerFor(k);
   const card=(id,act)=>{const c=CH(id),t=T(c[2]),isD=dn.includes(id),isP=picks.includes(id);return `<button class="chal ${isD?"done":isP?"pick":""}" style="--c:${t.c}" data-act="${act}" data-id="${id}"><span class="dot"></span><span class="ct">${c[1]}<small>${t.name}</small></span><span class="cx">${isD?"✓":"+"+c[3]}</span></button>`};
-  if(picks.length<3)return `<div class="board"><div class="sec-h"><h2>Daily challenge</h2><span class="eyebrow">pick ${3-picks.length} more</span></div>
-   <p class="muted" style="margin:0;font-size:14px">Picked for the traits you've been neglecting. Clear all 3 for a sweep: +50 XP and 25% of today's quality score.</p>${offer.map(id=>card(id,"chpick")).join("")}</div>`;
+  if(picks.length<3)return `<div class="board"><div class="sec-h"><h2>Daily challenge</h2><button class="eyebrow" data-act="mychal" style="text-decoration:underline">+ your own</button></div>
+   <p class="muted" style="margin:0;font-size:14px">Picked for the traits you've been neglecting. Pick ${3-picks.length} more. Clear all 3 for a sweep: +50 XP and a big boost to today's score.</p>${offer.map(id=>card(id,"chpick")).join("")}</div>`;
   const got=picks.filter(p=>dn.includes(p)).length;
   return `<div class="board"><div class="sec-h"><h2>Daily challenge</h2>${got===0?'<button class="eyebrow" data-act="chreset" style="text-decoration:underline">swap picks</button>':`<span class="eyebrow">${got}/3</span>`}</div>
    ${picks.map(id=>card(id,"chdone")).join("")}
@@ -752,12 +754,13 @@ function sDay(k){const d=dateOf(k),x=series()[k]||{},r=R(x.r),dq=dayQ(k),hs=(S.l
   <div class="later"><button data-act="close"><span><b>Locked in</b><br><span class="muted" style="font-size:13px">${hs.length?hs.join(", "):"Nothing logged"}</span></span><span>${hs.length}</span></button>
   ${TD(k).length?`<button data-act="close"><span><b>To-do</b><br><span class="muted" style="font-size:13px">${TD(k).map(t=>(t.done?"✓ ":t.moved?"→ ":t.dropped?"✕ ":"○ ")+esc(t.t)).join("<br>")}</span></span><span>${TD(k).filter(t=>t.done).length}/${TD(k).length}</span></button>`:""}
   <button data-act="close"><span><b>Challenges</b><br><span class="muted" style="font-size:13px">${ch.length?ch.join(", "):"None cleared"}</span></span><span>${sweepOn(k)?"sweep":ch.length+"/3"}</span></button></div>`}
-function sCustom(){const c=cdraft;return `<div class="shh"><div><span class="eyebrow">Your categories</span><h2>Make your own</h2><p>Anything you want to track: reading, skincare, guitar, posting on TikTok.</p></div>${X}</div>
+function sCustom(){const c=cdraft;return `<div class="shh"><div><span class="eyebrow">Your habits</span><h2>Make your own</h2><p>Anything you want to track daily: skincare, guitar, posting on TikTok.</p></div>${X}</div>
   <div class="field"><label for="c-name">Name</label><input id="c-name" maxlength="24" data-c="name" value="${esc(c.name)}" placeholder="e.g. Read 10 pages"></div>
   <div class="field"><label>Which trait does it build?</label><div class="opts">${TRAITS.map(t=>`<button class="opt ${c.trait===t.id?"on":""}" data-act="ctrait" data-id="${t.id}">${t.name}</button>`).join("")}</div></div>
   <div class="field"><label>How many times a week does Future You do it?</label><div class="opts">${[1,2,3,4,5,6,7].map(n=>`<button class="opt ${c.freq===n?"on":""}" data-act="cfreq" data-id="${n}">${n}×</button>`).join("")}</div></div>
-  <button class="btn hot" data-act="ccreate">Add category</button>
-  ${(S.custom||[]).length?`<div class="mine">${S.custom.map(x=>`<div><span><b>${esc(x.name)}</b> <span class="muted">· ${T(x.trait)?.name} · ${x.freq}×/wk</span></span><button data-act="cdel" data-id="${x.id}">${c.del===x.id?"Tap again to delete":"Delete"}</button></div>`).join("")}</div>`:""}`}
+  <button class="btn hot" data-act="ccreate">Add habit</button>
+  ${(S.custom||[]).length?`<div class="mine">${S.custom.map(x=>`<div><span><b>${esc(x.name)}</b> <span class="muted">· ${T(x.trait)?.name} · ${x.freq}×/wk</span></span><button data-act="cdel" data-id="${x.id}">${c.del===x.id?"Tap again to delete":"Delete"}</button></div>`).join("")}</div>`:""}
+  <div style="display:flex;flex-direction:column;gap:8px"><span class="eyebrow">Built-in habits · tap − / + to change the weekly goal</span><div class="mine">${CORE.map(h=>{const c=(S.habitCfg||{})[h.id]||{},f=c.freq||h.freq;return `<div style="${c.hide?"opacity:.5":""}"><span><b>${h.name}</b> <span class="muted">· ${f}×/wk</span></span><span class="row" style="gap:6px;flex-wrap:nowrap"><button data-act="hfreq" data-id="${h.id}" data-n="-1" style="color:var(--ink)">−</button><button data-act="hfreq" data-id="${h.id}" data-n="1" style="color:var(--ink)">+</button><button data-act="hhide" data-id="${h.id}">${c.hide?"Show":"Hide"}</button></span></div>`}).join("")}</div></div>`}
 
 
 function bossCard(){const B=S.boss;if(!B||!B.rounds)return `<button class="mainq" data-act="bossedit"><span class="eyebrow">Boss fight</span><h3>Turn a big task into a boss</h3><span class="go">Break it into rounds and knock it out</span></button>`;
@@ -799,14 +802,54 @@ function setTodos(k,list){setDay(k,{todos:list})}
 function addTodo(){const i=$("td-new");const t=(i&&i.value||"").trim();if(!t)return;setTodos(today(),[...TD(today()),{id:"t"+Date.now().toString(36),t,done:false}]);save();render();setTimeout(()=>{const n=$("td-new");if(n)n.focus()},0)}
 function moveTodo(k,id){const t=TD(k).find(x=>x.id===id);if(!t)return;setTodos(k,TD(k).map(x=>x.id===id?{...x,moved:today()}:x));setTodos(today(),[...TD(today()),{id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),t:t.t,done:false,from:k}])}
 function todoXP(){let x=0;for(const k in S.days)for(const t of(S.days[k].todos||[]))if(t.done)x+=5;return x}
+
+let MC={text:"",trait:"healthy",xp:20,del:null};
+function sMyChal(){const L=S.myChal||[];return `<div class="shh"><div><span class="eyebrow">Daily challenge</span><h2>Your own challenges</h2><p>They join the pool. One of yours shows up in the daily picks whenever you have any.</p></div>${X}</div>
+  <div class="field"><label for="mc-text">Challenge</label><input id="mc-text" maxlength="80" data-mc="text" value="${esc(MC.text)}" placeholder="e.g. Shoot one outfit video"></div>
+  <div class="field"><label>Trait it builds</label><div class="opts">${TRAITS.map(t=>`<button class="opt ${MC.trait===t.id?"on":""}" data-act="mctrait" data-id="${t.id}">${t.name}</button>`).join("")}</div></div>
+  <div class="field"><label>Difficulty</label><div class="opts">${[[10,"Easy"],[20,"Medium"],[30,"Hard"]].map(([n,l])=>`<button class="opt ${MC.xp===n?"on":""}" data-act="mcxp" data-id="${n}">${l} · +${n}</button>`).join("")}</div></div>
+  <button class="btn hot" data-act="mcadd">Add challenge</button>
+  ${L.length?`<div class="mine">${L.map(c=>`<div><span>${esc(c[1])} <span class="muted">· ${T(c[2])?.name} · +${c[3]}</span></span><button data-act="mcdel" data-id="${c[0]}">${MC.del===c[0]?"Tap again":"Delete"}</button></div>`).join("")}</div>`:""}`}
+
+/* ---- friends: each person shares a small card (no journal, money or health) with people they add ---- */
+let MYCODE="", FR=[], FRC={code:"",err:"",busy:false,del:null};
+function cardData(){const k=today(),x=series()[k]||{},r=R(x.r),L=lvl(txp());
+  const recent=Object.values(E).filter(e=>e.habit!=="journal").sort((a,b)=>b.ts-a.ts).slice(0,6).map(e=>{const h=H(e.habit);return{h:h?h.name:e.habit,v:h?h.verb:"",ts:e.ts,num:e.num||"",num2:e.num2||"",title:e.title||"",rating:e.rating||0,kind:h?h.kind:""}});
+  return{name:S.name||"Friend",ovr:+ovrOn(k).toFixed(1),lvl:L.lv,title:titleFor(L.lv),streak:streak(),day:r?r.name:"",dayC:x.r||"",wk:+wkGain().toFixed(2),
+    today:(S.log[k]||[]).map(id=>H(id)?.name).filter(Boolean),traits:TRAITS.map(t=>({n:t.name,m:momentum(TH(t))})),recent,at:Date.now()}}
+let cardT=null;function sbCardQueue(){if(!SB||!UID||!MYCODE)return;clearTimeout(cardT);cardT=setTimeout(async()=>{await SB.from("lifemax_profiles").update({card:cardData(),updated_at:new Date().toISOString()}).eq("user_id",UID)},1500)}
+async function sbProfile(){const{data,error}=await SB.from("lifemax_profiles").select("code").eq("user_id",UID).maybeSingle();if(error)return;
+  if(data){MYCODE=data.code}else{for(let i=0;i<4&&!MYCODE;i++){const c=Array.from({length:6},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("");
+    const{error:e}=await SB.from("lifemax_profiles").insert({user_id:UID,code:c,card:cardData()});if(!e)MYCODE=c}}
+  sbCardQueue();await loadFriends()}
+async function loadFriends(){if(!SB||!UID)return;const[o,i]=await Promise.all([SB.from("lifemax_links").select("friend").eq("owner",UID),SB.from("lifemax_links").select("owner").eq("friend",UID)]);
+  const out=new Set((o.data||[]).map(r=>r.friend)),inc=new Set((i.data||[]).map(r=>r.owner)),ids=[...new Set([...out,...inc])];
+  let cards={};if(ids.length){const{data}=await SB.from("lifemax_profiles").select("user_id,card,updated_at").in("user_id",ids);(data||[]).forEach(r=>cards[r.user_id]=r.card)}
+  FR=ids.map(id=>({id,iAdded:out.has(id),theyAdded:inc.has(id),card:cards[id]||null}));render();if(sheet&&sheet.t==="friend")renderSheet()}
+function friendStrip(){const vis=FR.filter(f=>f.card);if(!vis.length)return"";
+  return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Friends</h2><span class="eyebrow">tap to check in</span></div><div class="stories">${vis.map(f=>{const c=f.card,col=(R(c.dayC)||{}).c||"var(--line)";
+   return `<button class="story" data-act="friend" data-id="${f.id}"><span class="rg" style="--c:${col};--p:100"><span style="font-size:20px">${Math.floor(c.ovr)}</span></span><small>${esc(c.name)}</small></button>`}).join("")}</div></div>`}
+function friendsMgr(){if(!SB)return"";if(!UID)return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Friends</h2></div><p class="muted" style="margin:0;font-size:14px">Sign in to sync first, then you can link up with friends.</p></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Friends</h2><span class="eyebrow">they see your card, not your journal</span></div>
+  <div class="field"><label for="fr-name">Name friends see</label><input id="fr-name" maxlength="20" value="${esc(S.name||"")}" data-act="setname" placeholder="Your first name"></div>
+  <div class="total" style="cursor:default"><span class="muted" style="font-size:13px">Your code</span><b class="num" style="letter-spacing:.12em">${MYCODE||"…"}</b></div>
+  <div class="tdadd"><input id="fr-code" maxlength="6" placeholder="Their code" autocapitalize="characters" data-fr="code" value="${esc(FRC.code)}"><button class="btn solid" data-act="fradd" ${FRC.busy?"disabled":""}>Add</button></div>
+  ${FRC.err?`<p style="margin:0;color:var(--hot);font-size:13px">${esc(FRC.err)}</p>`:""}
+  ${FR.length?`<div class="mine">${FR.map(f=>`<div><span><b>${esc(f.card?f.card.name:"Waiting…")}</b> <span class="muted">· ${f.iAdded&&f.theyAdded?"linked":f.iAdded?"they haven't added you yet":"added you"}</span></span>${f.iAdded?`<button data-act="frdel" data-id="${f.id}">${FRC.del===f.id?"Tap again":"Remove"}</button>`:`<button data-act="frback" data-id="${f.id}" style="color:var(--mint)">Add back</button>`}</div>`).join("")}</div>`:`<p class="muted" style="margin:0;font-size:13px">Swap codes. When you both add each other, you'll see each other's card in your feed.</p>`}</div>`}
+function sFriend(id){const f=FR.find(x=>x.id===id);if(!f||!f.card)return `<div class="shh"><h2>Not shared yet</h2>${X}</div>`;const c=f.card,r=R(c.dayC);
+  return `<div class="shh"><div><span class="eyebrow">${esc(c.title)} · Level ${c.lvl} · updated ${ago(c.at)}</span><h2>${esc(c.name)}</h2></div>${X}</div>
+  <div class="ovr" style="cursor:default"><span class="badge"><b class="num">${Math.floor(c.ovr)}</b><span>OVR</span></span><span class="dl ${c.wk>0?"up":c.wk<0?"dn":"muted"}">${c.wk>0?"+":""}${c.wk}% this week</span><span class="brain"><span class="eyebrow">Today</span><b>${r?r.name:"Nothing logged yet"}</b></span><span class="muted" style="font-size:13px;position:relative">${c.streak} day streak</span></div>
+  <div class="stories">${c.traits.map((t,i)=>`<span class="story"><span class="rg" style="--c:${TRAITS[i]?TRAITS[i].c:"var(--sky)"};--p:${t.m}"><span style="color:${TRAITS[i]?TRAITS[i].c:"inherit"}">${t.m}</span></span><small>${esc(t.n)}</small></span>`).join("")}</div>
+  <div class="field"><label>Locked in today</label><div class="tags">${c.today.length?c.today.map(x=>`<span class="tag">${esc(x)}</span>`).join(""):'<span class="muted" style="font-size:14px">Nothing yet</span>'}</div></div>
+  ${c.recent.length?`<div class="later">${c.recent.map(p=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:14px;background:var(--surface);font-size:14px"><span>${esc(c.name)} ${esc(p.v||p.h)}${p.kind==="run"&&p.num?" · "+esc(p.num)+" mi":p.kind==="read"&&p.num?" · "+esc(p.num)+" pages":p.kind==="mins"&&p.num?" · "+esc(p.num)+" min":""}${p.title?" · "+esc(p.title):""}${p.rating?" · "+"★".repeat(p.rating):""}</span><span class="muted num" style="font-size:11px;flex:none">${ago(p.ts)}</span></div>`).join("")}</div>`:""}`}
 /* ======== render ======== */
 function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
    v.innerHTML=t==="feed"?vFeed():t==="today"?vToday():t==="vision"?vVision():vMe();if(anim){v.classList.remove("enter");void v.offsetWidth;v.classList.add("enter")}}}
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
-function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-)/.test(f))return;
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
 function closeSheet(){sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
 function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};const lastBook=h.kind==="read"&&!ex.title?(Object.values(E).filter(e=>e.habit==="read"&&e.title).sort((a,b)=>b.ts-a.ts)[0]||{}).title||"":"";
@@ -850,6 +893,20 @@ document.addEventListener("click",async e=>{
   if(a==="jar")return openSheet("jar",id);
   if(a==="accts")return openSheet("accts");
   if(a==="export"){const blob=new Blob([JSON.stringify({app:"lifemax",v:1,saved:new Date().toISOString(),S,E},null,1)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="lifemax-backup-"+today()+".json";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Backup saved");return}
+  if(a==="hfreq"){const h=CORE.find(x=>x.id===id),c={...((S.habitCfg||{})[id]||{})};c.freq=Math.max(1,Math.min(7,(c.freq||h.freq)+(+b.dataset.n)));S.habitCfg={...(S.habitCfg||{}),[id]:c};save();render();return}
+  if(a==="hhide"){const c={...((S.habitCfg||{})[id]||{})};c.hide=!c.hide;S.habitCfg={...(S.habitCfg||{}),[id]:c};save();render();toast(c.hide?"Hidden. Past days keep their XP.":"Back on the grid");return}
+  if(a==="mychal"){MC={text:"",trait:"healthy",xp:20,del:null};return openSheet("mychal")}
+  if(a==="mctrait"){MC.trait=id;return renderSheet()}
+  if(a==="mcxp"){MC.xp=+id;return renderSheet()}
+  if(a==="mcadd"){const t=MC.text.trim();if(!t){toast("Type the challenge first");return}S.myChal=[...(S.myChal||[]),["m"+Date.now().toString(36),t,MC.trait,MC.xp]];MC.text="";save();render();renderSheet();toast("Challenge added to the pool");return}
+  if(a==="mcdel"){if(MC.del!==id){MC.del=id;return renderSheet()}S.myChal=(S.myChal||[]).filter(c=>c[0]!==id);MC.del=null;save();render();renderSheet();return}
+  if(a==="friend")return openSheet("friend",id);
+  if(a==="fradd"||a==="frback"){if(!SB||!UID)return;FRC.err="";let fid=id;
+    if(a==="fradd"){const c=FRC.code.trim().toUpperCase();if(c.length<6){FRC.err="Codes are 6 letters and numbers.";return render()}if(c===MYCODE){FRC.err="That's your own code.";return render()}
+      FRC.busy=true;render();const{data,error}=await SB.rpc("lifemax_find",{c});FRC.busy=false;if(error||!data){FRC.err="No one has that code. Check it and try again.";return render()}fid=data}
+    const{error:e2}=await SB.from("lifemax_links").insert({owner:UID,friend:fid});if(e2&&!/duplicate/i.test(e2.message)){FRC.err="Couldn't add them. Try again.";return render()}
+    FRC.code="";toast("Added. They can see your card now.");await loadFriends();return}
+  if(a==="frdel"){if(FRC.del!==id){FRC.del=id;return render()}await SB.from("lifemax_links").delete().eq("owner",UID).eq("friend",id);FRC.del=null;toast("Removed. They can't see your card anymore.");await loadFriends();return}
   if(a==="tdadd"){addTodo();return}
   if(a==="tdtog"){const k=today(),was=TD(k).find(x=>x.id===id);setTodos(k,TD(k).map(x=>x.id===id?{...x,done:!x.done}:x));if(was&&!was.done)burst(b,"+5");save();levelCheck(before);render();return}
   if(a==="tddel"){setTodos(today(),TD(today()).filter(x=>x.id!==id));save();render();return}
@@ -899,7 +956,7 @@ Brain dump:
   if(["round","defeat","claim","unclaim","add"].includes(a)){save();levelCheck(before)}
   render();
 });
-document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value});
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value;if(ds.mc)MC[ds.mc]=e.target.value;if(ds.fr)FRC[ds.fr]=e.target.value.toUpperCase()});
 document.addEventListener("change",async e=>{const i=e.target;
   if(i.id==="imp"&&i.files&&i.files[0]){try{const d=JSON.parse(await i.files[0].text());if(!d.S)throw 0;S=merge(d.S);E=d.E||{};save();for(const id in E)writeEntry(id);render(true);toast("Backup loaded")}catch(err){toast("That file isn't a Life Max backup")}i.value="";return}
   if(i.id==="p-photo"&&i.files&&i.files[0]&&draft){const file=i.files[0],d=draft;d.uploading=true;d.preview=URL.createObjectURL(file);renderSheet();
@@ -907,18 +964,19 @@ document.addEventListener("change",async e=>{const i=e.target;
     d.uploading=false;if(draft===d)renderSheet();return}
   const a=i.dataset&&i.dataset.act;if(!a)return;
   if(a==="vision"){S.vision=i.value.trim()||VISION_DEFAULT;save();return}
+  if(a==="setname"){S.name=i.value.trim();save();render();return}
   if(a==="wedit"){ensurePillars();const p=S.pillars.find(x=>x.id===i.dataset.id);if(p){p[i.dataset.f]=i.value.trim()||(i.dataset.f==="name"?"Untitled":"");save();render()}return}
   const v=parseFloat(String(i.value).replace(/[^0-9.]/g,""))||0,before=txp();
   if(a==="jset")S.goals={...S.goals,[i.dataset.id]:{...S.goals[i.dataset.id],[i.dataset.f]:v}};
   if(a==="aset")S.accts={...S.accts,[i.dataset.id]:v};
   save();levelCheck(before);i.blur();render()});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="td-new"){e.preventDefault();addTodo();return}if(e.key==="Escape"){closeSheet();$("lvup").classList.remove("on")}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="td-new"){e.preventDefault();addTodo();return}if(e.key==="Enter"&&e.target&&e.target.id==="fr-code"){e.preventDefault();document.querySelector('[data-act="fradd"]').click();return}if(e.key==="Escape"){closeSheet();$("lvup").classList.remove("on")}});
 async function shrink(file){const url=URL.createObjectURL(file);try{const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url});
   const m=1400,s=Math.min(1,m/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
 
 /* ======== storage ======== */
-function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
+function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
   Object.assign(o.accts,d.accts||{});for(const k in o.goals)Object.assign(o.goals[k],(d.goals||{})[k]||{});return o}
 function persistLocal(){try{localStorage.setItem("lifemax",JSON.stringify(S));localStorage.setItem("lifemax_entries",JSON.stringify(E))}catch(e){}}
 function save(){S.updatedAt=Date.now();persistLocal();sbQueue();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
@@ -955,7 +1013,7 @@ function setSession(s){UID=s&&s.user?s.user.id:null;EMAIL=s&&s.user?s.user.email
 function sbQueue(){if(!SB||!UID)return;clearTimeout(sbTimer);sbTimer=setTimeout(sbPushState,800)}
 async function sbPushState(){if(!SB||!UID)return;if(sbBusy){sbAgain=true;return}sbBusy=true;
   const{error}=await SB.from("lifemax_state").upsert({user_id:UID,state:JSON.parse(JSON.stringify(S)),updated_at:new Date().toISOString()});
-  setStatus(error?"Saved on this phone. Sync will retry.":"Synced · "+EMAIL);sbBusy=false;if(sbAgain){sbAgain=false;sbPushState()}}
+  setStatus(error?"Saved on this phone. Sync will retry.":"Synced · "+EMAIL);sbBusy=false;sbCardQueue();if(sbAgain){sbAgain=false;sbPushState()}}
 async function sbEntry(id){if(!SB||!UID||!E[id])return;const{_id,...b}=E[id];const{error}=await SB.from("lifemax_entries").upsert({user_id:UID,id,body:b,ts:b.ts||Date.now()});if(error)setStatus("Post saved on this phone. Sync will retry.")}
 async function sbDelete(id){if(!SB||!UID)return;await SB.from("lifemax_entries").delete().eq("user_id",UID).eq("id",id)}
 async function sbPull(){if(!SB||!UID)return;setStatus("Syncing…");
@@ -968,7 +1026,7 @@ async function sbPull(){if(!SB||!UID)return;setStatus("Syncing…");
   const loc=E,mine=Object.keys(loc).filter(id=>!rem[id]||(loc[id].ts||0)>(rem[id].ts||0));
   E={...rem};for(const id of mine)E[id]=loc[id];persistLocal();
   if(mine.length)await SB.from("lifemax_entries").upsert(mine.map(id=>{const{_id,...b}=E[id];return{user_id:UID,id,body:b,ts:b.ts||Date.now()}}));
-  render();setStatus("Synced · "+EMAIL)}
+  render();setStatus("Synced · "+EMAIL);sbProfile()}
 function loadSb(){return new Promise(res=>{const urls=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js","https://unpkg.com/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"];let i=0;
   const go=()=>{if(window.supabase||i>=urls.length)return res();const sc=document.createElement("script");sc.src=urls[i++];sc.onload=()=>res();sc.onerror=go;document.head.appendChild(sc)};go()})}
 (async()=>{if(!SB_URL.startsWith("https://"))return;await loadSb();if(!window.supabase||!window.supabase.createClient){setStatus("Saved on this phone. Sync loads when you're online.");return}
