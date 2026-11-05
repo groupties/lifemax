@@ -382,6 +382,7 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:800;letter-spacing:-.01
 .srow .ov small{display:block;font-family:var(--mono);font-weight:500;font-size:11px}
 .sharebox{display:flex;flex-direction:column;gap:12px;align-items:center}
 .sharebox img{width:100%;max-width:300px;border-radius:18px;box-shadow:0 20px 40px -20px rgba(0,0,0,.6)}
+.pen{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--surface2);color:var(--muted);vertical-align:middle;margin-left:6px}
 </style>
 </head><body>
 <main>
@@ -588,7 +589,7 @@ function heat(){let cells="";const start=new Date();start.setDate(start.getDate(
 function weekXP(off){let x=0;for(let i=0;i<7;i++)x+=habitXP(daysAgo(i+off));return x}
 function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.values(E).filter(e=>e.habit==="journal").sort((a,b)=>b.ts-a.ts),tot=Object.values(S.accts).reduce((a,b)=>a+(+b||0),0);
   const w0=weekXP(0),w1=weekXP(7),mx=Math.max(w0,w1,1);
-  return `<div class="prof"><div class="ava"><span>${esc((S.name||"You")[0].toUpperCase())}</span></div><div><h1>${esc(S.name||"You")}</h1><p>${titleFor(L.lv)} · Level ${L.lv}</p><p>${esc((S.vision||VISION_DEFAULT).split(".")[0])}.</p></div></div>
+  return `<div class="prof"><div class="ava"><span>${esc((S.name||"You")[0].toUpperCase())}</span></div><div><h1>${esc(S.name||"You")}<button class="pen" data-act="editname" aria-label="Edit your name"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg></button></h1><p>${titleFor(L.lv)} · Level ${L.lv}</p><p>${esc((S.vision||VISION_DEFAULT).split(".")[0])}.</p></div></div>
   <div class="stats"><div><b class="num">${Math.floor(ovrOn(today()))}</b><span>OVR</span></div><div><b class="num">${L.lv}</b><span>level</span></div><div><b class="num">${streak()}</b><span>streak</span></div><div><b class="num">${Object.keys(E).length}</b><span>proofs</span></div></div>
   <button class="btn soft" data-act="share" style="align-self:flex-start">Share my card</button>
   <div class="lvbar"><div class="bar"><i style="width:${L.into/L.need*100}%"></i></div><div class="meta num"><span>${xp.toLocaleString()} XP</span><span>${L.need-L.into} to LV ${L.lv+1}</span></div></div>
@@ -861,7 +862,7 @@ function friendStrip(){const vis=FR.filter(f=>f.card);if(!vis.length)return"";
   const me={id:"me",card:{...cardData(),name:S.name||"You"},me:true};vis.forEach(f=>{if(!f.card.name||f.card.name==="Friend")f.card={...f.card,name:"No name set"}}),rows=[me,...vis].sort((a,b)=>b.card.ovr-a.card.ovr);
   return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Squad</h2><button class="eyebrow" data-act="share" style="text-decoration:underline">share my card</button></div><div class="squad">${rows.map((f,i)=>{const c=f.card,col=(R(c.dayC)||{}).c||"var(--line)";
    return `<button class="srow ${f.me?"me":""} ${i===0?"first":""}" ${f.me?'data-act="ovr"':`data-act="friend" data-id="${f.id}"`} style="--c:${col}"><span class="rk">${i+1}</span><span class="av">${esc((c.name||"?")[0].toUpperCase())}</span>
-   <span class="nm"><b>${esc(f.me?(S.name||"You")+" (you)":c.name)}</b><span>${c.day?esc(c.day):"Nothing logged yet"} · ${c.streak}🔥</span></span>
+   <span class="nm"><b>${esc(f.me?(S.name||"You")+" (you)":fname(f))}</b><span>${c.day?esc(c.day):"Nothing logged yet"} · ${c.streak}🔥</span></span>
    <span class="ov num">${c.ovr.toFixed(1)}<small class="${c.wk>0?"up":c.wk<0?"dn":"muted"}">${c.wk>0?"+":""}${(+c.wk).toFixed(2)}% wk</small></span></button>`}).join("")}</div></div>`}
 function friendsMgr(){if(!SB||!UID)return `<div style="display:flex;flex-direction:column;gap:10px"><div class="sec-h"><h2>Friends</h2></div><div class="field"><label for="fr-name">Your name</label><input id="fr-name" maxlength="20" value="${esc(S.name||"")}" data-act="setname" placeholder="Your first name"></div><p class="muted" style="margin:0;font-size:14px">Sign in to sync first, then you can link up with friends.</p></div>`;
   return `<div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Friends</h2><span class="eyebrow">they see your card, not your journal</span></div>
@@ -869,13 +870,13 @@ function friendsMgr(){if(!SB||!UID)return `<div style="display:flex;flex-directi
   <div class="total" style="cursor:default"><span class="muted" style="font-size:13px">Your code</span><b class="num" style="letter-spacing:.12em">${MYCODE||"…"}</b></div>
   <div class="tdadd"><input id="fr-code" maxlength="6" placeholder="Their code" autocapitalize="characters" data-fr="code" value="${esc(FRC.code)}"><button class="btn solid" data-act="fradd" ${FRC.busy?"disabled":""}>Add</button></div>
   ${FRC.err?`<p style="margin:0;color:var(--hot);font-size:13px">${esc(FRC.err)}</p>`:""}
-  ${FR.length?`<div class="mine">${FR.map(f=>`<div><span><b>${esc(f.card?f.card.name:"Waiting…")}</b> <span class="muted">· ${f.iAdded&&f.theyAdded?"linked":f.iAdded?"they haven't added you yet":"added you"}</span></span>${f.iAdded?`<button data-act="frdel" data-id="${f.id}">${FRC.del===f.id?"Tap again":"Remove"}</button>`:`<button data-act="frback" data-id="${f.id}" style="color:var(--mint)">Add back</button>`}</div>`).join("")}</div>`:`<p class="muted" style="margin:0;font-size:13px">Swap codes. When you both add each other, you'll see each other's card in your feed.</p>`}</div>`}
+  ${FR.length?`<div class="mine">${FR.map(f=>`<div><span><b>${esc(f.card?fname(f):"Waiting…")}</b> <span class="muted">· ${f.iAdded&&f.theyAdded?"linked":f.iAdded?"they haven't added you yet":"added you"}</span></span>${f.iAdded?`<button data-act="frdel" data-id="${f.id}">${FRC.del===f.id?"Tap again":"Remove"}</button>`:`<button data-act="frback" data-id="${f.id}" style="color:var(--mint)">Add back</button>`}</div>`).join("")}</div>`:`<p class="muted" style="margin:0;font-size:13px">Swap codes. When you both add each other, you'll see each other's card in your feed.</p>`}</div>`}
 function sFriend(id){const f=FR.find(x=>x.id===id);if(!f||!f.card)return `<div class="shh"><h2>Not shared yet</h2>${X}</div>`;const c=f.card,r=R(c.dayC);
-  return `<div class="shh"><div><span class="eyebrow">${esc(c.title)} · Level ${c.lvl} · updated ${ago(c.at)}</span><h2>${esc(c.name)}</h2></div>${X}</div>
+  return `<div class="shh"><div><span class="eyebrow">${esc(c.title)} · Level ${c.lvl} · updated ${ago(c.at)}</span><h2>${esc(fname(f))}<button class="pen" data-act="editnick" data-id="${f.id}" aria-label="Set a nickname"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg></button></h2>${(S.nick||{})[f.id]?`<p>${esc(c.name&&c.name!=="Friend"?c.name:"No name set")}</p>`:""}</div>${X}</div>
   <div class="ovr" style="cursor:default"><span class="badge"><b class="num">${Math.floor(c.ovr)}</b><span>OVR</span></span><span class="dl ${c.wk>0?"up":c.wk<0?"dn":"muted"}">${c.wk>0?"+":""}${c.wk}% this week</span><span class="brain"><span class="eyebrow">Today</span><b>${r?r.name:"Nothing logged yet"}</b></span><span class="muted" style="font-size:13px;position:relative">${c.streak} day streak</span></div>
   <div class="stories">${c.traits.map((t,i)=>`<span class="story"><span class="rg" style="--c:${TRAITS[i]?TRAITS[i].c:"var(--sky)"};--p:${t.m}"><span style="color:${TRAITS[i]?TRAITS[i].c:"inherit"}">${t.m}</span></span><small>${esc(t.n)}</small></span>`).join("")}</div>
   <div class="field"><label>Locked in today</label><div class="tags">${c.today.length?c.today.map(x=>`<span class="tag">${esc(x)}</span>`).join(""):'<span class="muted" style="font-size:14px">Nothing yet</span>'}</div></div>
-  ${c.recent.length?`<div class="later">${c.recent.map(p=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:14px;background:var(--surface);font-size:14px"><span>${esc(c.name)} ${esc(p.v||p.h)}${p.kind==="run"&&p.num?" · "+esc(p.num)+" mi":p.kind==="read"&&p.num?" · "+esc(p.num)+" pages":p.kind==="mins"&&p.num?" · "+esc(p.num)+" min":""}${p.title?" · "+esc(p.title):""}${p.rating?" · "+"★".repeat(p.rating):""}</span><span class="muted num" style="font-size:11px;flex:none">${ago(p.ts)}</span></div>`).join("")}</div>`:""}`}
+  ${c.recent.length?`<div class="later">${c.recent.map(p=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:14px;background:var(--surface);font-size:14px"><span>${esc(fname(f))} ${esc(p.v||p.h)}${p.kind==="run"&&p.num?" · "+esc(p.num)+" mi":p.kind==="read"&&p.num?" · "+esc(p.num)+" pages":p.kind==="mins"&&p.num?" · "+esc(p.num)+" min":""}${p.title?" · "+esc(p.title):""}${p.rating?" · "+"★".repeat(p.rating):""}</span><span class="muted num" style="font-size:11px;flex:none">${ago(p.ts)}</span></div>`).join("")}</div>`:""}`}
 
 /* ---- Claude through your Cloudflare Worker ---- */
 const AI_URL="https://lifemax-ai.studamm23.workers.dev";
@@ -954,14 +955,23 @@ async function shareCard(){SHARE.busy=true;openSheet("share");const b=await make
   if(SHARE.url)URL.revokeObjectURL(SHARE.url);SHARE.url=URL.createObjectURL(b);SHARE.file=new File([b],"lifemax-"+today()+".png",{type:"image/png"});renderSheet()}
 function sShare(){return `<div class="shh"><div><span class="eyebrow">Share</span><h2>Your card</h2><p>Post it to your story or send it to your friends.</p></div>${X}</div>
   <div class="sharebox">${SHARE.busy||!SHARE.url?'<p class="muted">Making your card…</p>':`<img src="${SHARE.url}" alt="Your Life Max card"><div class="row" style="justify-content:center"><button class="btn hot" data-act="sharego">Share</button></div><p class="muted" style="margin:0;font-size:13px;text-align:center">If Share doesn't open, press and hold the image to save it.</p>`}</div>`}
+
+/* ---- names and nicknames ---- */
+const fname=f=>(S.nick||{})[f.id]||(f.card&&f.card.name&&f.card.name!=="Friend"?f.card.name:"No name set");
+let NM={v:""};
+function sName(id){const f=id?FR.find(x=>x.id===id):null;const real=f&&f.card&&f.card.name&&f.card.name!=="Friend"?f.card.name:"No name set";
+  return `<div class="shh"><div><span class="eyebrow">${f?"Nickname":"Your name"}</span><h2>${f?"Nickname for "+esc(real):"Edit your name"}</h2><p>${f?"Only you see this. It shows everywhere instead of their name.":"This is what your friends see."}</p></div>${X}</div>
+  <div class="field"><label for="nm-input">${f?"Nickname":"Name"}</label><input id="nm-input" maxlength="20" data-nm="v" value="${esc(NM.v)}" placeholder="${f?"e.g. Babe":"Your first name"}"></div>
+  <div class="row"><button class="btn hot" data-act="savename" data-id="${id||""}">Save</button>${f&&(S.nick||{})[id]?`<button class="btn soft" data-act="clearnick" data-id="${id}">Use their real name</button>`:""}</div>`}
+async function pushCardNow(){if(SB&&UID&&MYCODE){clearTimeout(cardT);await SB.from("lifemax_profiles").update({card:cardData(),updated_at:new Date().toISOString()}).eq("user_id",UID)}}
 /* ======== render ======== */
 function render(anim){_str=null;_ovr=null;rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
    v.innerHTML=t==="feed"?vFeed():t==="today"?vToday():t==="vision"?vVision():vMe();if(anim){v.classList.remove("enter");void v.offsetWidth;v.classList.add("enter")}}}
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
-function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-|ck-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-|ck-|nm-)/.test(f))return;
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
 function closeSheet(){if(REC){try{REC.stop()}catch(e){}}sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
 function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};const lastBook=h.kind==="read"&&!ex.title?(Object.values(E).filter(e=>e.habit==="read"&&e.title).sort((a,b)=>b.ts-a.ts)[0]||{}).title||"":"";
@@ -1019,6 +1029,11 @@ document.addEventListener("click",async e=>{
     const{error:e2}=await SB.from("lifemax_links").insert({owner:UID,friend:fid});if(e2&&!/duplicate/i.test(e2.message)){FRC.err="Couldn't add them. Try again.";return render()}
     FRC.code="";toast("Added. They can see your card now.");await loadFriends();return}
   if(a==="frdel"){if(FRC.del!==id){FRC.del=id;return render()}await SB.from("lifemax_links").delete().eq("owner",UID).eq("friend",id);FRC.del=null;toast("Removed. They can't see your card anymore.");await loadFriends();return}
+  if(a==="editname"){NM={v:S.name||""};openSheet("name");setTimeout(()=>{const n=$("nm-input");if(n)n.focus()},350);return}
+  if(a==="editnick"){NM={v:(S.nick||{})[id]||""};openSheet("name",id);setTimeout(()=>{const n=$("nm-input");if(n)n.focus()},350);return}
+  if(a==="savename"){const v=NM.v.trim();if(id){const n={...(S.nick||{})};if(v)n[id]=v;else delete n[id];S.nick=n;save();closeSheet();render();toast(v?"Nickname saved":"Nickname cleared");return}
+    S.name=v;save();closeSheet();render();await pushCardNow();toast("Name updated");return}
+  if(a==="clearnick"){const n={...(S.nick||{})};delete n[id];S.nick=n;save();closeSheet();render();toast("Using their real name");return}
   if(a==="share"){shareCard();return}
   if(a==="sharego"){const f=SHARE.file;try{if(f&&navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"My Life Max card"});return}}catch(e){if(e&&e.name==="AbortError")return}
     const l=document.createElement("a");l.href=SHARE.url;l.download=f?f.name:"lifemax.png";document.body.appendChild(l);l.click();l.remove();toast("Saved the image");return}
@@ -1074,7 +1089,7 @@ Brain dump:
   if(["round","defeat","claim","unclaim","add"].includes(a)){save();levelCheck(before)}
   render();
 });
-document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value;if(ds.mc)MC[ds.mc]=e.target.value;if(ds.ck)CK[ds.ck]=e.target.value;if(ds.fr)FRC[ds.fr]=e.target.value.toUpperCase()});
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value;if(ds.mc)MC[ds.mc]=e.target.value;if(ds.ck)CK[ds.ck]=e.target.value;if(ds.nm)NM[ds.nm]=e.target.value;if(ds.fr)FRC[ds.fr]=e.target.value.toUpperCase()});
 document.addEventListener("change",async e=>{const i=e.target;
   if(i.id==="imp"&&i.files&&i.files[0]){try{const d=JSON.parse(await i.files[0].text());if(!d.S)throw 0;S=merge(d.S);E=d.E||{};save();for(const id in E)writeEntry(id);render(true);toast("Backup loaded")}catch(err){toast("That file isn't a Life Max backup")}i.value="";return}
   if(i.id==="p-photo"&&i.files&&i.files[0]&&draft){const file=i.files[0],d=draft;d.uploading=true;d.preview=URL.createObjectURL(file);renderSheet();
@@ -1088,13 +1103,13 @@ document.addEventListener("change",async e=>{const i=e.target;
   if(a==="jset")S.goals={...S.goals,[i.dataset.id]:{...S.goals[i.dataset.id],[i.dataset.f]:v}};
   if(a==="aset")S.accts={...S.accts,[i.dataset.id]:v};
   save();levelCheck(before);i.blur();render()});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="td-new"){e.preventDefault();addTodo();return}if(e.key==="Enter"&&e.target&&e.target.id==="fr-code"){e.preventDefault();document.querySelector('[data-act="fradd"]').click();return}if(e.key==="Escape"){closeSheet();$("lvup").classList.remove("on")}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="nm-input"){e.preventDefault();document.querySelector('[data-act="savename"]').click();return}if(e.key==="Enter"&&e.target&&e.target.id==="td-new"){e.preventDefault();addTodo();return}if(e.key==="Enter"&&e.target&&e.target.id==="fr-code"){e.preventDefault();document.querySelector('[data-act="fradd"]').click();return}if(e.key==="Escape"){closeSheet();$("lvup").classList.remove("on")}});
 async function shrink(file){const url=URL.createObjectURL(file);try{const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url});
   const m=1400,s=Math.min(1,m/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
 
 /* ======== storage ======== */
-function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
+function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal","nick"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
   Object.assign(o.accts,d.accts||{});for(const k in o.goals)Object.assign(o.goals[k],(d.goals||{})[k]||{});return o}
 function persistLocal(){try{localStorage.setItem("lifemax",JSON.stringify(S));localStorage.setItem("lifemax_entries",JSON.stringify(E))}catch(e){}}
 function save(){S.updatedAt=Date.now();persistLocal();sbQueue();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
