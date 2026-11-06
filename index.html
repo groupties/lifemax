@@ -449,6 +449,20 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:800;letter-spacing:-.01
 .daytabs button.wk{box-shadow:inset 0 -3px 0 var(--amber)}
 .tf{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tf input,.tf select{font-family:var(--mono);font-size:16px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.obdots{display:flex;gap:6px;justify-content:center}
+.obdots i{width:28px;height:5px;border-radius:3px;background:var(--line)}
+.obdots i.on{background:linear-gradient(90deg,var(--hot),var(--amber))}
+.areas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.area{padding:14px;border-radius:16px;background:var(--surface);border:1.5px solid transparent;text-align:left;font-weight:600;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.area small{font-weight:400;color:var(--muted);font-size:12px}
+.area.on{border-color:var(--hot);background:color-mix(in srgb,var(--hot) 12%,var(--surface))}
+.modepick{display:flex;flex-direction:column;gap:8px}
+.modepick button{padding:16px;border-radius:16px;background:var(--surface);border:1.5px solid transparent;text-align:left}
+.modepick button b{display:block;font-family:var(--display);font-size:18px}
+.modepick button span{font-size:13px;color:var(--muted)}
+.modepick button.on{border-color:var(--hot)}
+.danger{border:1.5px solid color-mix(in srgb,var(--hot) 50%,transparent)}
+.btn.red{background:var(--hot);color:var(--onhot)}
 </style>
 </head><body>
 <main>
@@ -551,7 +565,7 @@ const hasProof=e=>!!(e&&(e.note||e.num||e.num2||e.rating||e.title||e.photo||e.du
 function lvl(xp,s=1){let lv=1,need=100*s,left=xp;while(left>=need){left-=need;lv++;need=Math.round((100+40*(lv-1))*s)}return{lv,into:left,need}}
 function habitXP(k){return(S.log[k]||[]).reduce((a,id)=>{const h=H(id);if(!h)return a;const e=E[k+"_"+id];return a+h.xp+(hasProof(e)?Math.round(h.xp*.5):0)},0)}
 function questXP(pid){let x=0;for(const[q,,v]of P(pid).quests)if(S.quests[pid+":"+q])x+=v;return x}
-function txp(){let x=(S.bossRounds||0)*10+(S.bossXP||0)+todoXP();for(const k in S.log)x+=habitXP(k);for(const p of PILLARS)x+=questXP(p.id);const g=S.goals;
+function txp(){let x=(S.bossRounds||0)*10+(S.bossXP||0)+(S.archXP||0)+todoXP();for(const k in S.log)x+=habitXP(k);for(const p of PILLARS)x+=questXP(p.id);const g=S.goals;
   return x+chalXP()+Math.floor((+g.debt.paid||0)/20)+Math.floor(((+g.cushion.saved||0)+(+g.cali.saved||0)+(+g.move.saved||0))/50)}
 function streak(){let n=0;const d=new Date();if(!(S.log[dkey(d)]||[]).length)d.setDate(d.getDate()-1);while((S.log[dkey(d)]||[]).length){n++;d.setDate(d.getDate()-1)}return n}
 // Momentum: recency-weighted reps over 14 days vs the pace Future You keeps. Today only counts once done.
@@ -1062,6 +1076,7 @@ function sSettings(){const t=SET();
   <div class="setgroup"><h3>Privacy</h3>${tog("hideMoney","Hide money amounts","Blur balances and jars when showing your phone to someone")}</div>
   <div class="setgroup"><h3>Schedule</h3><p>Your daily plan, built around your shift.</p><button class="btn soft" data-act="schedopen" style="align-self:flex-start">Edit my schedule</button></div>
   <div class="setgroup"><h3>Open the app on</h3>${seg("startTab",[["feed","Feed"],["today","Today"],["vision","Vision"],["me","Me"]])}</div>
+  ${resetBlock()}
   <div class="setgroup"><h3>Account</h3><div class="row"><button class="btn soft" data-act="editname">Edit name</button>${S.avatar?`<button class="btn soft" data-act="rmavatar">Remove photo</button>`:""}${SB?(UID?`<button class="btn soft" data-act="signout">Sign out</button>`:`<button class="btn hot" data-act="opensignin">Sign in to sync</button>`):""}<button class="btn soft" data-act="export">Export backup</button></div>
    <p>${UID?"Syncing as "+esc(EMAIL):"Not syncing. Progress is saved on this phone only."}</p></div>`}
 
@@ -1179,16 +1194,91 @@ function buildWeek(g){const DUR={gym:75,trade:90,school:60,brand:45,read:30,run:
     for(const k of g.pri)place(k,(work?DUR:OFF)[k]);
     for(const[x,y]of free)if(y-x>=45)add("free",x,y);add("wind",B-45,B);out[WD[d]]=bl}
   return out}
+
+/* ---- setup quiz (first launch, or from Settings) ---- */
+const EXTRA_WORLDS={
+ reading:{id:"reading",name:"Reading",why:"Read more, think better",quests:[["list","Make a list of 5 books you want to read",20],["week","Read 7 days in a row",50],["first","Finish a whole book",80]]},
+ trading:{id:"trading",name:"Trading",why:"Learn the craft before risking real money",quests:[["rules","Write your entry and exit rules",40],["risk","Set a max loss per day and stick to it",30],["paper","Paper trade for 2 weeks",60],["journal","Journal 10 trades: setup, result, lesson",50]]}};
+const AREAS=[
+ {id:"fitness",n:"Gym & fitness",d:"Lift, eat better",h:["workout","clean"],w:["body"]},
+ {id:"running",n:"Running",d:"Runs, 5Ks",h:["run"],w:["body"]},
+ {id:"school",n:"School",d:"Study, grades",h:["study"],w:["school"]},
+ {id:"career",n:"Career",d:"Jobs, networking",h:["apply"],w:["career"]},
+ {id:"money",n:"Money",d:"Save, pay off debt",h:["nospend"],w:["money"]},
+ {id:"create",n:"Creative projects",d:"A brand, art, content",h:["brand"],w:["brand"]},
+ {id:"reading",n:"Reading",d:"Books, pages",h:["read"],w:["reading"]},
+ {id:"language",n:"A new language",d:"Daily practice",h:["lang"],w:["life"]},
+ {id:"film",n:"Movies",d:"Watch and rate",h:["film"],w:["life"]},
+ {id:"mind",n:"Mental health",d:"Journal, rest",h:["journal","rest"],w:["mind"]},
+ {id:"trading",n:"Trading",d:"Markets, discipline",h:[],w:["trading"]}];
+const worldLib=id=>EXTRA_WORLDS[id]||DEFAULT_PILLARS.find(p=>p.id===id);
+let OB=null;
+function startQuiz(retake){OB={step:0,retake:!!retake,name:S.name||"",areas:[],text:"",mode:SET().mode,ai:null,busy:false,err:""};openSheet("quiz")}
+function maybeOnboard(){if(S.onboarded||sheet)return;if(Object.keys(S.log||{}).length||(S.pillars&&S.pillars.length)||Object.keys(E).length){S.onboarded=true;save();return}startQuiz(false)}
+function sQuiz(){const o=OB,dots=`<div class="obdots">${[0,1,2,3,4].map(i=>`<i class="${i<=o.step?"on":""}"></i>`).join("")}</div>`,
+  nav=(next,label)=>`<div class="row" style="justify-content:space-between">${o.step?`<button class="btn soft" data-act="obback">Back</button>`:"<span></span>"}<button class="btn hot" data-act="${next}" ${o.busy?"disabled":""}>${label}</button></div>`;
+  const head=(e,h,p)=>`<div class="shh"><div><span class="eyebrow">${e}</span><h2>${h}</h2>${p?`<p>${p}</p>`:""}</div>${X}</div>`;
+  if(o.step===0)return `${dots}${head(o.retake?"Retake setup":"Welcome to Life Max","Let's set this up for you","A few quick questions and the app shapes itself around you. You can change everything later.")}
+   <div class="field"><label for="ob-name">What should we call you?</label><input id="ob-name" maxlength="20" data-ob="name" value="${esc(o.name)}" placeholder="Your first name"></div>${nav("obnext","Next")}`;
+  if(o.step===1)return `${dots}${head("Step 2 of 5","What do you want to work on?","Pick as many as you like. Each one adds habits and quests.")}
+   <div class="areas">${AREAS.map(a=>`<button class="area ${o.areas.includes(a.id)?"on":""}" data-act="obarea" data-v="${a.id}">${a.n}<small>${a.d}</small></button>`).join("")}</div>
+   ${o.err?`<p style="margin:0;color:var(--hot);font-size:14px">${esc(o.err)}</p>`:""}${nav("obnext","Next")}`;
+  if(o.step===2)return `${dots}${head("Step 3 of 5","Who do you want to be in a year?","Write it like you'd text a friend. What you want, what's getting in the way, what a great day looks like. Messy is fine.")}
+   <div class="field"><textarea id="ob-text" class="dump" data-ob="text" placeholder="In a year I want to…">${esc(o.text)}</textarea></div>
+   ${o.ai?`<div class="jout"><span class="lbl">Claude set you up</span><div>${esc(o.ai.vision||"")}</div><div class="tags">${(o.ai.areas||[]).map(id=>{const a=AREAS.find(x=>x.id===id);return a?`<span class="tag">${a.n}</span>`:""}).join("")}</div></div>`:""}
+   ${UID?`<button class="btn soft" data-act="obai" ${o.busy?"disabled":""}>${o.busy?"Claude is reading it…":o.ai?"Redo with Claude":"Let Claude set it up from this"}</button>`:`<p class="muted" style="margin:0;font-size:13px">Sign in to sync and Claude can build your quests from what you write. For now it becomes your vision.</p>`}
+   ${o.err?`<p style="margin:0;color:var(--hot);font-size:14px">${esc(o.err)}</p>`:""}${nav("obnext",o.text.trim()?"Next":"Skip")}`;
+  if(o.step===3)return `${dots}${head("Step 4 of 5","How hard do you want it to push you?","")}
+   <div class="modepick"><button class="${o.mode==="grind"?"on":""}" data-act="obmode" data-v="grind"><b>Grind</b><span>Empty days cost you a little, streaks reset on a miss, and you get alerts when things slip.</span></button>
+   <button class="${o.mode==="chill"?"on":""}" data-act="obmode" data-v="chill"><b>Chill</b><span>No penalty for empty days, one missed day won't break your streak, gentle nudges only.</span></button></div>${nav("obnext","Next")}`;
+  const plan=obPlan();
+  return `${dots}${head("Step 5 of 5","Here's your setup","")}
+   <div class="setgroup"><h3>Daily habits</h3><div class="tags">${plan.habits.map(id=>`<span class="tag">${esc((H(id)||{name:id==="u_trade"?"Trading session":id}).name)}</span>`).join("")}</div></div>
+   <div class="setgroup"><h3>Quest worlds</h3>${plan.worlds.map(w=>`<p><b style="color:var(--ink)">${esc(w.name)}</b> · ${w.quests.length} quests</p>`).join("")}</div>
+   ${plan.vision?`<div class="setgroup"><h3>Your vision</h3><p>${esc(plan.vision)}</p></div>`:""}
+   ${o.retake?`<p class="muted" style="margin:0;font-size:13px">Your progress, streak and history stay. Your habits and worlds switch to this setup. XP from quests you already cleared is kept.</p>`:""}
+   <div class="row" style="justify-content:space-between"><button class="btn soft" data-act="obback">Back</button><button class="btn hot" data-act="obdone">Start</button></div>
+   <button class="skip" data-act="obdone" data-v="sched" style="align-self:flex-start">Start and plan my schedule</button>`}
+function obPlan(){const o=OB,ai=o.ai||{},sel=AREAS.filter(a=>o.areas.includes(a.id)),hs=new Set(["journal","rest"]),ws=[];
+  sel.forEach(a=>{a.h.forEach(h=>hs.add(h));a.w.forEach(w=>{if(!ws.includes(w))ws.push(w)})});if(o.areas.includes("trading"))hs.add("u_trade");if(!ws.includes("mind"))ws.push("mind");
+  const worlds=ws.map(id=>{const base=worldLib(id);if(!base)return null;const q=(ai.quests||{})[id];return{...JSON.parse(JSON.stringify(base)),quests:Array.isArray(q)&&q.length?q.slice(0,6).map((x,i)=>["ai"+i+Date.now().toString(36),String(x[0]).slice(0,90),Math.max(10,Math.min(200,Math.round(+x[1]||40)))]):JSON.parse(JSON.stringify(base.quests))}}).filter(Boolean);
+  const vision=(ai.vision||o.text.trim().slice(0,220)).trim();return{habits:[...hs],worlds,vision,freq:ai.freq||{}}}
+async function obAI(){const t=OB.text.trim();if(t.length<20){OB.err="Write a little more first, even a few sentences.";return renderSheet()}OB.busy=true;OB.err="";renderSheet();
+  try{const j=aiJSON(await ai(`Someone is setting up a habit and self-improvement app. Read what they wrote and configure it for them.
+Area ids you can choose from: ${AREAS.map(a=>a.id+" ("+a.n+")").join(", ")}.
+World ids and what they're for: career, school, money, brand (creative projects), body (fitness and running), mind, life (language, movies, misc), reading, trading.
+Habit ids: workout, run, clean (ate clean), study, apply (career move), nospend (no impulse buys), brand (creative work), read, lang, film, journal, rest.
+Reply with only JSON: {"areas": [area ids that fit what they want], "vision": "1-2 sentences in first person describing who they want to become, in their voice", "quests": {"<world id>": [["specific, concrete one-time goal from what they wrote", xp from 20 to 150]]} (only for worlds matching the chosen areas, 3 to 5 quests each), "freq": {"<habit id>": times per week 1-7 that feels realistic for them}}
+What they wrote:
+"""${t.slice(0,6000)}"""`));
+    OB.ai={areas:(j.areas||[]).filter(id=>AREAS.some(a=>a.id===id)),vision:String(j.vision||""),quests:j.quests||{},freq:j.freq||{}};OB.areas=[...new Set([...OB.areas,...OB.ai.areas])]}
+  catch(e){OB.err=aiErr(e)}OB.busy=false;if(sheet&&sheet.t==="quiz")renderSheet()}
+function obApply(){const o=OB,plan=obPlan(),keep=new Set(plan.habits),cfg={};
+  CORE.forEach(h=>{if(!keep.has(h.id))cfg[h.id]={hide:true};else if(plan.freq[h.id])cfg[h.id]={freq:Math.max(1,Math.min(7,Math.round(+plan.freq[h.id])))}});
+  if(o.retake){const gone=(S.pillars&&S.pillars.length?S.pillars:DEFAULT_PILLARS).filter(p=>!plan.worlds.some(w=>w.id===p.id));S.archXP=(S.archXP||0)+gone.reduce((a,p)=>a+questXP(p.id),0);
+    plan.worlds=plan.worlds.map(w=>{const old=(S.pillars||[]).find(p=>p.id===w.id);return old||w})}
+  S.habitCfg=cfg;S.pillars=plan.worlds;if(o.name.trim())S.name=o.name.trim();if(plan.vision)S.vision=plan.vision;S.settings={...(S.settings||{}),mode:o.mode};
+  if(keep.has("u_trade")&&!tradeHabitId())S.custom=[...(S.custom||[]),{id:"u_trade",name:"Trading session",trait:"wealthy",freq:5,xp:15}];
+  S.onboarded=true;save();pushCardNow()}
+let RS={text:""};
+function resetBlock(){return `<div class="setgroup danger"><h3>Setup quiz &amp; reset</h3>
+  <p>Retake the setup quiz to change what the app focuses on. Your progress stays.</p><button class="btn soft" data-act="quizagain" style="align-self:flex-start">Retake setup quiz</button>
+  <p style="margin-top:8px"><b style="color:var(--hot)">Reset all progress</b> erases your OVR, level, XP, streaks, every logged day, posts, journal entries, check-ins, quests and to-dos. It can't be undone. Your name, photo, friends and settings stay. Export a backup first if you might want it back.</p>
+  <div class="field"><label for="rs-text">Type RESET to confirm</label><input id="rs-text" maxlength="5" autocapitalize="characters" data-rs="text" value="${esc(RS.text)}"></div>
+  <button class="btn red" data-act="resetall" style="align-self:flex-start" ${RS.text.trim().toUpperCase()==="RESET"?"":"disabled"}>Reset all progress</button></div>`}
+async function resetAll(){const keep={name:S.name,avatar:S.avatar,settings:S.settings,nick:S.nick};const ids=Object.keys(E);
+  S=merge({...keep,updatedAt:Date.now()});S.start=today();E={};RS={text:""};persistLocal();
+  if(SB&&UID){await SB.from("lifemax_entries").delete().eq("user_id",UID);await sbPushState()}closeSheet();render(true);toast("Everything's reset. Fresh start.");setTimeout(()=>startQuiz(false),500)}
 /* ======== render ======== */
 function render(anim){_str=null;_ovr=null;applySettings();rebuild();if(!S.start)S.start=today();for(const t of["feed","today","vision","me"]){const v=$("v-"+t);v.hidden=t!==tab;if(t===tab){
    if(t==="vision"&&document.activeElement&&document.activeElement.id==="vision")continue;
    v.innerHTML=t==="feed"?vFeed():t==="today"?vToday():t==="vision"?vVision():vMe();if(anim){v.classList.remove("enter");void v.offsetWidth;v.classList.add("enter")}}}
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
-function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-|ck-|nm-|pl-|g-|sd-|sg-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="plan"?sPlan(sheet.id):sheet.t==="cal"?`<div class="shh"><div><span class="eyebrow">Calendar</span><h2>Plan & look back</h2></div>${X}</div>${calendar()}`:sheet.t==="goal"?sGoal(sheet.id):sheet.t==="goalnew"?sGoalNew():sheet.t==="settings"?sSettings():sheet.t==="sched"?sSched():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-|ck-|nm-|pl-|g-|sd-|sg-|ob-|rs-)/.test(f))return;
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="plan"?sPlan(sheet.id):sheet.t==="cal"?`<div class="shh"><div><span class="eyebrow">Calendar</span><h2>Plan & look back</h2></div>${X}</div>${calendar()}`:sheet.t==="goal"?sGoal(sheet.id):sheet.t==="goalnew"?sGoalNew():sheet.t==="settings"?sSettings():sheet.t==="quiz"?sQuiz():sheet.t==="sched"?sSched():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
-function closeSheet(){if(REC){try{REC.stop()}catch(e){}}sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
+function closeSheet(){if(REC){try{REC.stop()}catch(e){}}const wasSignin=sheet&&sheet.t==="signin";if(sheet&&sheet.t==="quiz"&&!OB.retake&&!S.onboarded){S.onboarded=true;save()}sheet=null;if(wasSignin&&!UID)setTimeout(maybeOnboard,450);draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
 function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};const lastBook=h.kind==="read"&&!ex.title?(Object.values(E).filter(e=>e.habit==="read"&&e.title).sort((a,b)=>b.ts-a.ts)[0]||{}).title||"":"";
   draft={habit:id,kind:h.kind,note:ex.note||"",num:ex.num||"",num2:ex.num2||"",title:ex.title||lastBook,rating:ex.rating||0,dump:ex.dump||"",journal:ex.journal||null,photo:ex.photo||"",preview:ex.photo?photoSrc(ex.photo):"",busy:false,uploading:false,err:""};
   openSheet("proof",id)}
@@ -1266,6 +1356,14 @@ document.addEventListener("click",async e=>{
   if(a==="sgbuild"){const g=SD.g;if(!g.wake||!g.bed||(g.days.length&&(!g.ws||!g.we))){SD.err="Fill in your shift and sleep times.";return renderSheet()}
     S.sched=buildWeek(g);S.schedWork={...g};if(g.pri.includes("trade")&&!tradeHabitId())S.custom=[...(S.custom||[]),{id:"u_trade",name:"Trading session",trait:"wealthy",freq:5,xp:15}];
     SD.gen=false;save();render();renderSheet();toast("Your week is built");return}
+  if(a==="obnext"){if(OB.step===1&&!OB.areas.length){OB.err="Pick at least one.";return renderSheet()}OB.err="";OB.step++;$("sheet").scrollTop=0;return renderSheet()}
+  if(a==="obback"){OB.step=Math.max(0,OB.step-1);OB.err="";return renderSheet()}
+  if(a==="obarea"){const v=b.dataset.v;OB.areas=OB.areas.includes(v)?OB.areas.filter(x=>x!==v):[...OB.areas,v];OB.err="";return renderSheet()}
+  if(a==="obmode"){OB.mode=b.dataset.v;return renderSheet()}
+  if(a==="obai"){obAI();return}
+  if(a==="obdone"){const sch=b.dataset.v==="sched";obApply();closeSheet();tab="today";render(true);toast("You're all set");if(sch)setTimeout(()=>document.querySelector('[data-act="schedopen"]')?.click(),450);return}
+  if(a==="quizagain"){closeSheet();setTimeout(()=>startQuiz(true),350);return}
+  if(a==="resetall"){if(RS.text.trim().toUpperCase()!=="RESET")return;await resetAll();return}
   if(a==="settings")return openSheet("settings");
   if(a==="set"){const k=b.dataset.k;let v=b.dataset.v;if(v==="true")v=true;else if(v==="false")v=false;else if(/^\d+$/.test(v))v=+v;S.settings={...(S.settings||{}),[k]:v};save();render();renderSheet();return}
   if(a==="rmavatar"){S.avatar="";save();render();renderSheet();await pushCardNow();toast("Photo removed");return}
@@ -1343,7 +1441,7 @@ Brain dump:
   if(["round","defeat","claim","unclaim","add"].includes(a)){save();levelCheck(before)}
   render();
 });
-document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value;if(ds.mc)MC[ds.mc]=e.target.value;if(ds.ck)CK[ds.ck]=e.target.value;if(ds.nm)NM[ds.nm]=e.target.value;if(ds.pl)PL[ds.pl]=e.target.value;if(ds.sd&&SD)SD[ds.sd]=e.target.value;if(ds.sg&&SD)SD.g[ds.sg]=e.target.value;if(ds.gd&&GD)GD[ds.gd]=e.target.value;if(ds.fr)FRC[ds.fr]=e.target.value.toUpperCase()});
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.d;if(k&&draft)draft[k]=e.target.value;const c=e.target.dataset&&e.target.dataset.c;if(c&&cdraft)cdraft[c]=e.target.value;const si=e.target.dataset&&e.target.dataset.s;if(si)SI[si]=e.target.value;const ds=e.target.dataset||{};if(ds.qd)QD[ds.qd]=e.target.value;if(ds.cd)CD[ds.cd]=e.target.value;if(ds.bd&&BD)BD[ds.bd]=e.target.value;if(ds.mc)MC[ds.mc]=e.target.value;if(ds.ck)CK[ds.ck]=e.target.value;if(ds.nm)NM[ds.nm]=e.target.value;if(ds.pl)PL[ds.pl]=e.target.value;if(ds.ob&&OB)OB[ds.ob]=e.target.value;if(ds.rs){RS[ds.rs]=e.target.value;const rb=document.querySelector('[data-act="resetall"]');if(rb)rb.disabled=e.target.value.trim().toUpperCase()!=="RESET"}if(ds.sd&&SD)SD[ds.sd]=e.target.value;if(ds.sg&&SD)SD.g[ds.sg]=e.target.value;if(ds.gd&&GD)GD[ds.gd]=e.target.value;if(ds.fr)FRC[ds.fr]=e.target.value.toUpperCase()});
 document.addEventListener("change",async e=>{const i=e.target;
   if(i.id==="av-file"&&i.files&&i.files[0]){try{S.avatar=await avatarFrom(i.files[0]);save();render();await pushCardNow();toast("Photo updated")}catch(err){toast("That photo didn't work. Try another.")}i.value="";return}
   if(i.id==="imp"&&i.files&&i.files[0]){try{const d=JSON.parse(await i.files[0].text());if(!d.S)throw 0;S=merge(d.S);E=d.E||{};save();for(const id in E)writeEntry(id);render(true);toast("Backup loaded")}catch(err){toast("That file isn't a Life Max backup")}i.value="";return}
@@ -1364,7 +1462,7 @@ async function shrink(file){const url=URL.createObjectURL(file);try{const img=aw
   c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}finally{URL.revokeObjectURL(url)}}
 
 /* ======== storage ======== */
-function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal","nick","settings","avatar","sched","schedWork"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
+function merge(d){const o=JSON.parse(JSON.stringify(DEFAULT));if(!d)return o;o.log=d.log||{};o.quests=d.quests||{};o.bossRounds=+d.bossRounds||0;o.vision=d.vision||VISION_DEFAULT;o.start=d.start||null;o.custom=d.custom||[];o.days=d.days||{};for(const f of["name","pillars","boss","counts","goalLabels","acctLabels","vaultNote","updatedAt","bossXP","habitCfg","myChal","nick","settings","avatar","sched","schedWork","onboarded","archXP"])if(d[f]!=null)o[f]=d[f];o.qd=d.qd||{};
   Object.assign(o.accts,d.accts||{});for(const k in o.goals)Object.assign(o.goals[k],(d.goals||{})[k]||{});return o}
 function persistLocal(){try{localStorage.setItem("lifemax",JSON.stringify(S));localStorage.setItem("lifemax_entries",JSON.stringify(E))}catch(e){}}
 function save(){S.updatedAt=Date.now();persistLocal();sbQueue();if(!stateRef)return;clearTimeout(saveTimer);saveTimer=setTimeout(flush,700)}
@@ -1414,10 +1512,10 @@ async function sbPull(){if(!SB||!UID)return;setStatus("Syncing…");
   const loc=E,mine=Object.keys(loc).filter(id=>!rem[id]||(loc[id].ts||0)>(rem[id].ts||0));
   E={...rem};for(const id of mine)E[id]=loc[id];persistLocal();
   if(mine.length)await SB.from("lifemax_entries").upsert(mine.map(id=>{const{_id,...b}=E[id];return{user_id:UID,id,body:b,ts:b.ts||Date.now()}}));
-  render();setStatus("Synced · "+EMAIL);sbProfile()}
+  render();setStatus("Synced · "+EMAIL);sbProfile();setTimeout(maybeOnboard,300)}
 function loadSb(){return new Promise(res=>{const urls=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js","https://unpkg.com/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"];let i=0;
   const go=()=>{if(window.supabase||i>=urls.length)return res();const sc=document.createElement("script");sc.src=urls[i++];sc.onload=()=>res();sc.onerror=go;document.head.appendChild(sc)};go()})}
-(async()=>{if(!SB_URL.startsWith("https://"))return;await loadSb();if(!window.supabase||!window.supabase.createClient){setStatus("Saved on this phone. Sync loads when you're online.");return}
+(async()=>{if(!SB_URL.startsWith("https://")){maybeOnboard();return}await loadSb();if(!window.supabase||!window.supabase.createClient){setStatus("Saved on this phone. Sync loads when you're online.");maybeOnboard();return}
   SB=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   const{data}=await SB.auth.getSession();setSession(data.session);
   SB.auth.onAuthStateChange((ev,s)=>{const was=UID;setSession(s);if(UID&&UID!==was)sbPull();if(!UID&&was)render()});
