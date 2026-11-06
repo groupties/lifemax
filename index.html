@@ -48,6 +48,7 @@ h1,h2,h3{font-family:var(--display);margin:0;font-weight:800;letter-spacing:-.01
 .logo{font-family:var(--display);font-weight:800;font-size:27px;letter-spacing:-.03em}
 .logo i{font-style:normal;background:linear-gradient(90deg,var(--hot),var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
 .pills{display:flex;gap:6px}
+.pills svg{width:15px;height:15px}
 .pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:999px;background:var(--surface2)}
 .pill svg{width:13px;height:13px}
 
@@ -554,7 +555,7 @@ function levelCheck(before){const a=lvl(before).lv,b=lvl(txp()).lv;if(b>a){$("lv
 function header(){const L=lvl(txp()),st=streak();
   return `<div class="hdr"><div class="logo">life<i>max</i></div><div class="pills">
   <span class="pill num"><svg viewBox="0 0 24 24" fill="var(--amber)"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg>${st}</span>
-  <span class="pill num">OVR ${Math.floor(ovrOn(today()))}</span><button class="pill" data-act="settings" aria-label="Settings" style="padding:6px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div></div>`}
+  <span class="pill num">OVR ${Math.floor(ovrOn(today()))}</span><button class="pill" data-act="calopen" aria-label="Calendar" style="padding:6px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button><button class="pill" data-act="settings" aria-label="Settings" style="padding:6px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div></div>`}
 function storyRow(){return `<div class="stories">${TRAITS.map(t=>{const m=momentum(TH(t)),tr=trend(TH(t));
   return `<button class="story ${m<40?"slip":""}" data-act="trait" data-id="${t.id}"><span class="rg" style="--c:${t.c};--p:${m}"><span style="color:${t.c}">${m}</span></span><small>${t.name}${m<40?" ↓":tr==="up"?" ↑":""}</small></button>`}).join("")}</div>`}
 function postCard(e){const h=H(e.habit);if(!h)return"";const t=h.trait,c=t.c;let body="";
@@ -628,7 +629,7 @@ function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.
   <div class="stats"><div><b class="num">${Math.floor(ovrOn(today()))}</b><span>OVR</span></div><div><b class="num">${L.lv}</b><span>level</span></div><div><b class="num">${streak()}</b><span>streak</span></div><div><b class="num">${Object.keys(E).length}</b><span>proofs</span></div></div>
   <button class="btn soft" data-act="share" style="align-self:flex-start">Share my card</button>
   <div class="lvbar"><div class="bar"><i style="width:${L.into/L.need*100}%"></i></div><div class="meta num"><span>${xp.toLocaleString()} XP</span><span>${L.need-L.into} to LV ${L.lv+1}</span></div></div>
-  <div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Calendar</h2></div>${calendar()}<div class="sec-h" style="margin-top:12px"><h2>Lookback</h2><span class="eyebrow">overall by day</span></div>${lookChart()}${dayList()}
+  <div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Lookback</h2><span class="eyebrow">overall by day</span></div>${lookChart()}${dayList()}<span class="eyebrow" style="margin-top:8px">Last 16 weeks</span><div class="heatwrap"><div class="heat">${heat()}</div></div>
    <div class="weekcmp"><div><span>This week</span><span class="b"><i style="width:${w0/mx*100}%;background:var(--hot)"></i></span><span class="num">${w0} XP</span></div>
    <div><span class="muted">Last week</span><span class="b"><i style="width:${w1/mx*100}%;background:var(--muted)"></i></span><span class="num muted">${w1} XP</span></div></div></div>
   <div style="display:flex;flex-direction:column;gap:12px"><div class="sec-h"><h2>Vault</h2><span class="eyebrow">fill order: left to right</span></div>
@@ -792,7 +793,7 @@ function lookChart(){const n=Math.min(30,dayN(today())+1),ks=[];for(let i=n-1;i>
   const dots=vals.map((v,i)=>{const r=R(ratingOf(ks[i]));return `<circle cx="${x(i)}" cy="${y(v)}" r="4.5" fill="${r?r.c:"var(--surface2)"}" stroke="var(--bg)" stroke-width="1.5"/>`}).join("");
   return `<svg class="chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Overall rating by day">${g}${line}${dots}</svg>
   <div class="legend">${RATINGS.map(r=>`<span style="--c:${r.c}"><i></i>${r.name.replace(" day","")}</span>`).join("")}</div>`}
-function dayList(){const n=Math.min(7,dayN(today())+1);let out="";for(let i=0;i<n;i++){const k=daysAgo(i),d=dateOf(k),x=series()[k]||{},r=R(x.r),nh=(S.log[k]||[]).length;
+function dayList(){const n=Math.min(14,dayN(today())+1);let out="";for(let i=0;i<n;i++){const k=daysAgo(i),d=dateOf(k),x=series()[k]||{},r=R(x.r),nh=(S.log[k]||[]).length;
   out+=`<button class="dayrow" data-act="day" data-k="${k}"><span class="dt">${d.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()}<b>${d.getDate()}</b></span>
   <span class="rt"><b style="--c:${r?r.c:"var(--line)"}"><i></i>${r?r.name:"In progress"}</b><span>${nh} locked in${TD(k).length?" · "+TD(k).filter(t=>t.done).length+"/"+TD(k).length+" to-dos":""}${sweepOn(k)?" · clean sweep":""}${DY(k).vibe?" · felt "+DY(k).vibe.score+"/10":""}</span></span>
   <span class="ov num">${ovrOn(k).toFixed(1)}<small class="${x.delta>0?"up":x.delta<0?"dn":"muted"}">${x.delta>0?"+":""}${(x.delta||0).toFixed(2)}%</small></span></button>`}return `<div class="days">${out}</div>`}
@@ -1093,7 +1094,7 @@ function render(anim){_str=null;_ovr=null;applySettings();rebuild();if(!S.start)
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   if(sheet&&sheet.t!=="proof")renderSheet()}
 function renderSheet(){if(!sheet)return;const f=document.activeElement&&document.activeElement.id;if(f&&/^(jv|jt|ac-|si-|q-|w-|cd-|b-|mc-|fr-|ck-|nm-|pl-|g-)/.test(f))return;
-  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="plan"?sPlan(sheet.id):sheet.t==="goal"?sGoal(sheet.id):sheet.t==="goalnew"?sGoalNew():sheet.t==="settings"?sSettings():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
+  $("sin").innerHTML=sheet.t==="signin"?sSignin():sheet.t==="ovr"?sOvr():sheet.t==="day"?sDay(sheet.id):sheet.t==="custom"?sCustom():sheet.t==="mychal"?sMyChal():sheet.t==="check"?sCheck():sheet.t==="share"?sShare():sheet.t==="plan"?sPlan(sheet.id):sheet.t==="cal"?`<div class="shh"><div><span class="eyebrow">Calendar</span><h2>Plan & look back</h2></div>${X}</div>${calendar()}`:sheet.t==="goal"?sGoal(sheet.id):sheet.t==="goalnew"?sGoalNew():sheet.t==="settings"?sSettings():sheet.t==="name"?sName(sheet.id):sheet.t==="friend"?sFriend(sheet.id):sheet.t==="counts"?sCounts():sheet.t==="boss"?sBoss():sheet.t==="trait"?sTrait(sheet.id):sheet.t==="pick"?sPicker():sheet.t==="proof"?sProof():sheet.t==="entry"?sEntry(sheet.id):sheet.t==="world"?sWorld(sheet.id):sheet.t==="jar"?sJar(sheet.id):sAccts()}
 function openSheet(t,id){sheet={t,id};renderSheet();$("sheet").scrollTop=0;$("scrim").classList.add("on");$("sheet").classList.add("on")}
 function closeSheet(){if(REC){try{REC.stop()}catch(e){}}sheet=null;draft=null;$("scrim").classList.remove("on");$("sheet").classList.remove("on")}
 function startProof(id){const h=H(id),ex=E[today()+"_"+id]||{};const lastBook=h.kind==="read"&&!ex.title?(Object.values(E).filter(e=>e.habit==="read"&&e.title).sort((a,b)=>b.ts-a.ts)[0]||{}).title||"":"";
@@ -1158,6 +1159,7 @@ document.addEventListener("click",async e=>{
   if(a==="clearnick"){const n={...(S.nick||{})};delete n[id];S.nick=n;save();closeSheet();render();toast("Using their real name");return}
   if(a==="settings")return openSheet("settings");
   if(a==="set"){const k=b.dataset.k;let v=b.dataset.v;if(v==="true")v=true;else if(v==="false")v=false;else if(/^\d+$/.test(v))v=+v;S.settings={...(S.settings||{}),[k]:v};save();render();renderSheet();return}
+  if(a==="calopen")return openSheet("cal");
   if(a==="calnav"){const n=+b.dataset.n;CAL.m+=n;if(CAL.m<0){CAL.m=11;CAL.y--}if(CAL.m>11){CAL.m=0;CAL.y++}render();return}
   if(a==="calday"){const k=b.dataset.k;PL={text:""};if(k>today())return openSheet("plan",k);if(dayN(k)<0)return;return openSheet("day",k)}
   if(a==="pladd"){const k=b.dataset.k,t=PL.text.trim();if(!t)return;setTodos(k,[...TD(k),{id:"t"+Date.now().toString(36),t,done:false}]);PL.text="";save();render();renderSheet();setTimeout(()=>{const n=$("pl-new");if(n)n.focus()},0);return}
