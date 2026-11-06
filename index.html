@@ -558,7 +558,7 @@ function streak(){let n=0;const d=new Date();if(!(S.log[dkey(d)]||[]).length)d.s
 function momentum(habitIds){let a=0,e=0;for(let i=0;i<14;i++){const w=Math.pow(.88,i),k=daysAgo(i);
   for(const id of habitIds){const h=H(id),d=done(id,k);if(d)a+=w;if(i>0||d)e+=w*h.freq/7}}return e?Math.min(100,Math.round(a/e*100)):0}
 function trend(habitIds){let r=0,o=0;for(let i=0;i<7;i++)for(const id of habitIds){if(done(id,daysAgo(i)))r++;if(done(id,daysAgo(i+7)))o++}return r>o?"up":r<o?"dn":"flat"}
-function questPct(worlds){let a=0,b=0;for(const w of worlds){const p=P(w);b+=p.quests.length;a+=p.quests.filter(([q])=>S.quests[w+":"+q]).length}return b?a/b*100:0}
+function questPct(worlds){let a=0,b=0;for(const w of worlds){const p=P(w);if(!p)continue;b+=p.quests.length;a+=p.quests.filter(([q])=>S.quests[w+":"+q]).length}return b?a/b*100:0}
 function traitScore(t){let s=.6*momentum(TH(t))+.4*questPct(t.worlds);
   if(t.id==="wealthy"){const g=S.goals,f=GOALS.reduce((a,G)=>a+Math.min(1,(+g[G.k][G.f]||0)/(+g[G.k].target||1)),0)/GOALS.length*100;s=.4*momentum(TH(t))+.3*questPct(t.worlds)+.3*f}
   return Math.round(s)}
@@ -678,7 +678,7 @@ function vMe(){const xp=txp(),L=lvl(xp),days=Object.keys(S.log).length,j=Object.
 function sTrait(id){const t=T(id),m=momentum(TH(t)),s=traitScore(t);
   return `<div class="shh"><div><span class="eyebrow">Trait</span><h2 style="color:${t.c}">${t.name}</h2><p>Momentum ${m}% · Vision ${s}%</p></div>${X}</div>
   <div class="later">${TH(t).map(id=>{const h=H(id),ld=lastDone(id);return `<button data-act="proof" data-id="${id}"><span><b>${h.name}</b><br><span class="muted" style="font-size:13px">${ld===null?"Not started":ld===0?"Done today":ld+" days ago"} · goal ${h.freq}× a week</span></span><span>${done(id,today())?"✓":"Lock in"}</span></button>`}).join("")}</div>
-  <div class="later">${t.worlds.map(w=>{const p=P(w),dn=p.quests.filter(([q])=>S.quests[w+":"+q]).length;return `<button data-act="world" data-id="${w}"><span>${p.name} quests</span><span>${dn}/${p.quests.length}</span></button>`}).join("")}</div>`}
+  <div class="later">${t.worlds.filter(w=>P(w)).map(w=>{const p=P(w),dn=p.quests.filter(([q])=>S.quests[w+":"+q]).length;return `<button data-act="world" data-id="${w}"><span>${p.name} quests</span><span>${dn}/${p.quests.length}</span></button>`}).join("")}</div>`}
 function sPicker(){const tl=S.log[today()]||[];return `<div class="shh"><div><span class="eyebrow">New post</span><h2>What did you lock in?</h2></div>${X}</div>
   <div class="grid">${HABITS.map(h=>`<button class="tile ${tl.includes(h.id)?"on":""}" style="--c:${h.trait.c}" data-act="proof" data-id="${h.id}"><span></span><svg viewBox="0 0 24 24">${ICON[h.id]||ICON._custom}</svg><span class="tn">${h.name}</span></button>`).join("")}</div>`}
 function sProof(){const h=H(draft.habit),k=draft.kind;let f="";
@@ -716,7 +716,7 @@ function sWorld(id){const p=P(id);if(!p)return `<div class="shh"><h2>World remov
    <div class="mine">${p.quests.map(q=>`<div><span>${esc(q[1])} <span class="muted">+${q[2]}</span></span><button data-act="qdel" data-id="${id}" data-q="${q[0]}">${QD.del===q[0]?"Tap again":"Delete"}</button></div>`).join("")||'<p class="muted" style="margin:0">No quests yet.</p>'}</div>
    ${add}<div class="row" style="justify-content:space-between"><button class="btn solid" data-act="qedit">Done editing</button><button class="skip" data-act="wdel" data-id="${id}">${QD.del==="__world"?"Tap again to delete this world":"Delete world"}</button></div>`;
   return `${head}
-  ${cur?`<div class="now"><span class="eyebrow">Current quest · +${cur[2]} XP</span><div class="q">${esc(cur[1])}</div><div class="row" style="justify-content:space-between"><button class="btn hot" data-act="claim" data-id="${id}:${cur[0]}">Claim +${cur[2]} XP</button>${open.length>1?`<button class="skip" data-act="skip" data-id="${id}">Not now</button>`:""}</div></div>`:`<div class="card"><h3>${p.quests.length?"Every quest here is done.":"No quests yet. Add your first one."}</h3></div>`}
+  ${cur?`<div class="now"><span class="eyebrow">Current quest · +${cur[2]} XP</span><div class="q">${esc(cur[1])}</div><div class="row" style="justify-content:space-between"><button class="btn hot" data-act="claim" data-id="${id}:${cur[0]}">Claim +${cur[2]} XP</button><span class="row" style="gap:14px">${open.length>1?`<button class="skip" data-act="skip" data-id="${id}">Not now</button>`:""}<button class="skip" data-act="qdel" data-id="${id}" data-q="${cur[0]}">${QD.del===cur[0]?"Tap again to remove":"Not interested"}</button></span></div></div>`:`<div class="card"><h3>${p.quests.length?"Every quest here is done.":"No quests yet. Add your first one."}</h3></div>`}
   ${rest.length?`<div class="later">${rest.map(q=>`<button data-act="pick" data-id="${id}" data-q="${q[0]}"><span>${esc(q[1])}</span><span>+${q[2]}</span></button>`).join("")}</div>`:""}
   ${dn.length?`<div style="display:flex;flex-direction:column;gap:8px"><span class="eyebrow">Cleared · tap to undo</span><div class="trophies">${dn.map(q=>`<button class="trophy" data-act="unclaim" data-id="${id}:${q[0]}">✓ ${esc(q[1])}</button>`).join("")}</div></div>`:""}
   ${add}<button class="btn soft" data-act="qedit">Edit this world</button>`}
@@ -1212,7 +1212,7 @@ document.addEventListener("click",async e=>{
   if(a==="qxp"){QD.xp=+id;return renderSheet()}
   if(a==="qedit"){QD.edit=!QD.edit;QD.del=null;return renderSheet()}
   if(a==="qadd"){const t=QD.text.trim();if(!t){toast("Type the quest first");return}ensurePillars();const p=S.pillars.find(x=>x.id===id);p.quests.push(["q"+Date.now().toString(36),t,QD.xp]);QD.text="";save();render();renderSheet();toast("Quest added");return}
-  if(a==="qdel"){const q=b.dataset.q;if(QD.del!==q){QD.del=q;return renderSheet()}ensurePillars();const p=S.pillars.find(x=>x.id===id);p.quests=p.quests.filter(z=>z[0]!==q);QD.del=null;save();render();renderSheet();return}
+  if(a==="qdel"){const q=b.dataset.q;if(QD.del!==q){QD.del=q;return renderSheet()}ensurePillars();const p=S.pillars.find(x=>x.id===id);p.quests=p.quests.filter(z=>z[0]!==q);QD.del=null;skip[id]=0;save();render();renderSheet();toast("Quest removed");return}
   if(a==="wdel"){if(QD.del!=="__world"){QD.del="__world";return renderSheet()}ensurePillars();S.pillars=S.pillars.filter(x=>x.id!==id);if(!S.pillars.length)S.pillars=[{id:"w"+Date.now().toString(36),name:"New world",why:"",quests:[]}];save();closeSheet();render();toast("World deleted");return}
   if(a==="wnew"){ensurePillars();const nid="w"+Date.now().toString(36);S.pillars.push({id:nid,name:"New world",why:"",quests:[]});save();render();QD={text:"",xp:40,edit:true,del:null};return openSheet("world",nid)}
   if(a==="counts"){CD={label:"",date:"",hot:false,del:null};return openSheet("counts")}
